@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://66rd0kedm8bk"]
+
+[ext_resource type="Script" path="res://PaintCanvas.gd" id="1_eokwp"]
+
+[node name="PaintCanvas" type="Node2D"]
+script = ExtResource("1_eokwp")
+
+[node name="SaveButton" type="Button" parent="."]
+offset_top = -32.0
+offset_right = 51.0
+offset_bottom = -1.0
+text = "se-bu"
+
+[connection signal="pressed" from="SaveButton" to="." method="_on_save_button_pressed"]

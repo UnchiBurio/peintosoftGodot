@@ -1,0 +1,58 @@
+[gd_scene load_steps=3 format=3 uid="uid://66rd0kedm8bk"]
+
+[ext_resource type="Script" path="res://canvas/PaintCanvas.gd" id="1_cyd1w"]
+
+[sub_resource type="GDScript" id="GDScript_at4i2"]
+script/source = "# PaintCanvasGrid.gd
+extends Node2D
+
+var grid_size: int = 50
+var grid_color: Color = Color(0.2, 0.2, 0.2, 0.5)
+var grid_visible: bool = true
+var paint_canvas: Node2D
+
+func _ready() -> void:
+	paint_canvas = get_parent()
+	queue_redraw()
+
+func _draw() -> void:
+	if not grid_visible:
+		return
+	
+	var size = paint_canvas.canvas_size
+	
+	# 縦線の描画
+	for x in range(0, int(size.x) + grid_size, grid_size):
+		draw_line(
+			Vector2(x, 0),
+			Vector2(x, size.y),
+			grid_color
+		)
+	
+	# 横線の描画
+	for y in range(0, int(size.y) + grid_size, grid_size):
+		draw_line(
+			Vector2(0, y),
+			Vector2(size.x, y),
+			grid_color
+		)
+
+func toggle_visibility() -> void:
+	grid_visible = !grid_visible
+	queue_redraw()
+"
+
+[node name="PaintCanvas" type="Node2D"]
+script = ExtResource("1_cyd1w")
+
+[node name="SaveButton" type="Button" parent="."]
+offset_top = -32.0
+offset_right = 51.0
+offset_bottom = -1.0
+text = "se-bu"
+
+[node name="PaintCanvasGrid" type="Node2D" parent="."]
+visible = false
+script = SubResource("GDScript_at4i2")
+
+[connection signal="pressed" from="SaveButton" to="." method="_on_save_button_pressed"]
