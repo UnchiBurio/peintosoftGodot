@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://debitx3r83046"]
-
-[ext_resource type="Script" path="res://PropertiesPanel.gd" id="1_jhpr7"]
-
-[node name="PropertiesPanel" type="Panel"]
-script = ExtResource("1_jhpr7")

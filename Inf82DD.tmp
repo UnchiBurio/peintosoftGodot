@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bnmcrxoxv14bx"]
-
-[ext_resource type="Script" path="res://InfiniteCanvas.gd" id="1_5k68x"]
-
-[node name="InfiniteCanvas" type="Node2D"]
-script = ExtResource("1_5k68x")
