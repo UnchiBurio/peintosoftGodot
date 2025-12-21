@@ -22,6 +22,18 @@ class LayerData:
 		name = layer_name
 		visible = true
 		chunks = {}
+	
+	func values():
+		return chunks.values()
+	
+	func keys():
+		return chunks.keys()
+	
+	func has(key):
+		return chunks.has(key)
+	
+	func erase(key):
+		return chunks.erase(key)
 
 var layers: Array = [] # 各要素がLayerDataを格納
 var active_chunks: Array[CanvasChunk] = []  # 更新が必要なチャンク
