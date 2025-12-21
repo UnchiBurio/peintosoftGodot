@@ -30,5 +30,10 @@ text = "-"
 layout_mode = 2
 size_flags_vertical = 3
 
-[connection signal="pressed" from="Panel/VBoxContainer/HBoxContainer/AddButton" to="." method="_on_add_button_pressed"]
-[connection signal="pressed" from="Panel/VBoxContainer/HBoxContainer/DeleteButton" to="." method="_on_delete_button_pressed"]
+[node name="NameEdit" type="LineEdit" parent="Panel/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Layer name"
+
+[node name="VisibilityToggle" type="CheckBox" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Visible"

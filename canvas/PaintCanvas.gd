@@ -12,7 +12,18 @@ var CHUNK_MASK: int
 var CHUNK_BITS: int
 
 # チャンク管理用の変数
-var layers: Array[Dictionary] = [] # 各要素がレイヤーのチャンクを格納するディクショナリ
+class LayerData:
+	extends RefCounted
+	var name: String
+	var visible: bool
+	var chunks: Dictionary
+
+	func _init(layer_name: String):
+		name = layer_name
+		visible = true
+		chunks = {}
+
+var layers: Array = [] # 各要素がLayerDataを格納
 var active_chunks: Array[CanvasChunk] = []  # 更新が必要なチャンク
 var canvas_rect: Rect2i  # キャンバス全体の範囲
 # チャンクプール
@@ -118,7 +129,7 @@ func _ready():
 	
 	# TextureRectをシーンに追加
 	for layer in layers:
-		for chunk in layer.values():
+		for chunk in layer.chunks.values():
 			add_child(chunk.texture_rect)
 			
 	# シグナルの接続
@@ -268,9 +279,10 @@ func _ensure_chunks_exist(rect: Rect2i):
 	for x in range(start_chunk.x, end_chunk.x + 1):
 		for y in range(start_chunk.y, end_chunk.y + 1):
 			var chunk_pos = Vector2i(x, y)
-			for layer in layers:
-				if not layer.has(chunk_pos):
-					layer[chunk_pos] = _get_or_create_chunk(chunk_pos)
+			for i in range(layers.size()):
+				var layer = layers[i]
+				if not layer.chunks.has(chunk_pos):
+					layer.chunks[chunk_pos] = _get_or_create_chunk(chunk_pos, i)
 
 func _get_chunk_pos(pos: Vector2) -> Vector2i:
 	# 浮動小数点数を整数に変換してからビット演算を行う
@@ -282,9 +294,9 @@ func _get_chunk_pos(pos: Vector2) -> Vector2i:
 # チャンクの取得と管理
 func _get_chunk(pos: Vector2i) -> CanvasChunk:
 	# チャンク座標でのルックアップを確実に
-	if not layers[canvas_layer.current_layer_index].has(pos):
-		layers[canvas_layer.current_layer_index][pos] = _get_or_create_chunk(pos)
-	return layers[canvas_layer.current_layer_index][pos]
+	if not layers[canvas_layer.current_layer_index].chunks.has(pos):
+		layers[canvas_layer.current_layer_index].chunks[pos] = _get_or_create_chunk(pos, canvas_layer.current_layer_index)
+	return layers[canvas_layer.current_layer_index].chunks[pos]
 
 func _start_resize(edge: Vector2, global_pos: Vector2):
 	canvas_resize.start_resize(edge, global_pos)
@@ -430,11 +442,11 @@ func _get_affected_chunks(rect: Rect2) -> Array:
 		for y in range(start_chunk.y, end_chunk.y + 1):
 			var chunk_pos = Vector2i(x, y)
 			# すでに存在するチャンクのみを使用
-			if layers[canvas_layer.current_layer_index].has(chunk_pos):
-				affected.append(layers[canvas_layer.current_layer_index][chunk_pos])
+			if layers[canvas_layer.current_layer_index].chunks.has(chunk_pos):
+				affected.append(layers[canvas_layer.current_layer_index].chunks[chunk_pos])
 			# 必要な場合のみ新しいチャンクを作成
 			elif _is_chunk_needed(chunk_pos, rect):
-				var new_chunk = _get_or_create_chunk(chunk_pos)
+				var new_chunk = _get_or_create_chunk(chunk_pos, canvas_layer.current_layer_index)
 				affected.append(new_chunk)
 	
 	return affected
@@ -459,15 +471,15 @@ func cleanup_unused_chunks()->void:
 	# アクティブでないチャンクを解放
 	var keys_to_remove := []
 	for layer in layers:
-		for pos in layer.keys():
+		for pos in layer.chunks.keys():
 			if not used_chunks.has(pos):
 				keys_to_remove.append(pos)
 	
 	for pos in keys_to_remove:
 		for layer in layers:
-			if layer.has(pos):
-				var chunk = layer[pos]
-				layer.erase(pos)
+			if layer.chunks.has(pos):
+				var chunk = layer.chunks[pos]
+				layer.chunks.erase(pos)
 				if chunk_pool.size() < MAX_POOL_SIZE:
 					chunk.image.fill(Color.TRANSPARENT)
 					chunk_pool.append(chunk)
@@ -494,7 +506,7 @@ func _get_local_pos(pos: Vector2) -> Vector2i:
 	)
 
 # プールからチャンクを取得または新規作成
-func _get_or_create_chunk(pos: Vector2i) -> CanvasChunk:
+func _get_or_create_chunk(pos: Vector2i, layer_index: int) -> CanvasChunk:
 	var chunk: CanvasChunk
 	if chunk_pool.size() > 0:
 		chunk = chunk_pool.pop_back()
@@ -502,9 +514,10 @@ func _get_or_create_chunk(pos: Vector2i) -> CanvasChunk:
 		chunk.image.fill(Color.TRANSPARENT)
 		# offsetの代わりにpositionを使用
 		chunk.texture_rect.position = Vector2(pos * CHUNK_SIZE)
-		chunk.texture_rect.visible = true
+		chunk.texture_rect.visible = layers[layer_index].visible
 	else:
 		chunk = CanvasChunk.new(pos, CHUNK_SIZE)
+	chunk.texture_rect.z_index = layer_index
 	return chunk
 
 # 削除ボタンが押されたときの処理
@@ -532,15 +545,16 @@ func _on_delete_button_pressed() -> void:
 
 # レイヤーの追加
 func _add_layer(layer_name: String) -> void:
-	var new_layer: Dictionary = {}
+	var new_layer := LayerData.new(layer_name)
 	layers.append(new_layer)
 	canvas_layer.current_layer_index = layers.size() - 1
 	canvas_layer.current_layer_name = layer_name
 	_update_canvas_rect()
+	_refresh_layer_z_indices()
 	
 	# 新しいレイヤーのチャンクのTextureRectをシーンに追加
-	for chunk_pos in new_layer.keys():
-		var chunk = new_layer[chunk_pos]
+	for chunk_pos in new_layer.chunks.keys():
+		var chunk = new_layer.chunks[chunk_pos]
 		add_child(chunk.texture_rect)
 
 	emit_signal("layer_structure_changed")
@@ -556,8 +570,8 @@ func delete_current_layer() -> void:
 	var layer_to_remove = layers[current_index]
 	
 	# 削除されたレイヤーのチャンクを解放（メモリ管理）
-	for chunk_pos in layer_to_remove.keys():
-		var chunk = layer_to_remove[chunk_pos]
+	for chunk_pos in layer_to_remove.chunks.keys():
+		var chunk = layer_to_remove.chunks[chunk_pos]
 		
 		# プールに戻すか、完全に削除するか
 		if chunk_pool.size() < MAX_POOL_SIZE:
@@ -576,6 +590,9 @@ func delete_current_layer() -> void:
 	# 現在のレイヤーインデックスを調整（範囲外にならないように）
 	if canvas_layer.current_layer_index >= layers.size():
 		canvas_layer.current_layer_index = layers.size() - 1
+	canvas_layer.current_layer_name = layers[canvas_layer.current_layer_index].name
+	
+	_refresh_layer_z_indices()
 	
 	# キャンバスの状態を更新
 	_update_canvas_rect()
@@ -587,8 +604,62 @@ func delete_current_layer() -> void:
 
 # アクティブレイヤー変更用
 func change_active_layer(index: int):
+	if index < 0 or index >= layers.size():
+		return
 	canvas_layer.set_active_layer(index)
 	emit_signal("active_layer_changed", index)
+
+func rename_layer(index: int, new_name: String) -> void:
+	if index < 0 or index >= layers.size():
+		return
+	layers[index].name = new_name
+	if canvas_layer.current_layer_index == index:
+		canvas_layer.current_layer_name = new_name
+	emit_signal("layer_structure_changed")
+
+func set_layer_visibility(index: int, visible: bool) -> void:
+	if index < 0 or index >= layers.size():
+		return
+	layers[index].visible = visible
+	for chunk in layers[index].chunks.values():
+		chunk.texture_rect.visible = visible
+	queue_redraw()
+	emit_signal("canvas_updated")
+	emit_signal("layer_structure_changed")
+
+func move_layer(from_index: int, to_index: int) -> void:
+	if from_index == to_index or from_index < 0 or to_index < 0:
+		return
+	if from_index >= layers.size() or to_index >= layers.size():
+		return
+	var layer = layers[from_index]
+	layers.remove_at(from_index)
+	if from_index < to_index:
+		to_index -= 1
+	layers.insert(to_index, layer)
+	
+	var active_index = canvas_layer.current_layer_index
+	if active_index == from_index:
+		active_index = to_index
+	elif active_index > from_index and active_index <= to_index:
+		active_index -= 1
+	elif active_index < from_index and active_index >= to_index:
+		active_index += 1
+	canvas_layer.current_layer_index = active_index
+	canvas_layer.current_layer_name = layers[active_index].name
+	
+	_refresh_layer_z_indices()
+	queue_redraw()
+	emit_signal("layer_structure_changed")
+	emit_signal("canvas_updated")
+	emit_signal("active_layer_changed", active_index)
+
+func _refresh_layer_z_indices() -> void:
+	for i in range(layers.size()):
+		var layer = layers[i]
+		for chunk in layer.chunks.values():
+			chunk.texture_rect.z_index = i
+			chunk.texture_rect.visible = layer.visible
 
 # 新しい保存機能の実装
 func _on_save_button_pressed() -> void:
@@ -602,8 +673,10 @@ func _create_canvas_image() -> Image:
 	
 	# レイヤーごとにブレンド処理
 	for layer in layers:
-		for chunk_pos in layer.keys():
-			var chunk = layer[chunk_pos]
+		if not layer.visible:
+			continue
+		for chunk_pos in layer.chunks.keys():
+			var chunk = layer.chunks[chunk_pos]
 			
 			# チャンクの位置を計算
 			var dst_pos = Vector2i(chunk_pos * CHUNK_SIZE)

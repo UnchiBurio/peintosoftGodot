@@ -13,6 +13,5 @@ func _init(canvas: Node2D):
 func set_active_layer(index: int):
 	if index >= 0 and index < paint_canvas.layers.size():
 		current_layer_index = index
-		# 名前は適宜管理（ここでは簡易的に）
-		current_layer_name = "layer" + str(index)
+		current_layer_name = paint_canvas.layers[index].name
 		print("Active layer changed to:", index)
