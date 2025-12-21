@@ -8,6 +8,8 @@ class_name Main
 @onready var navigator_viewport: SubViewport = $NavigatorViewport
 @onready var navigator_texture_rect: TextureRect = $NavigatorTextureRect
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
+@onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
+@onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 
 var active_paint_canvas: Node2D = null
 
@@ -20,6 +22,7 @@ var canvas_counter := 0  # 新規キャンバスの連番用
 # ツールの状態
 enum Tool {BRUSH, ERASER}
 var current_tool = Tool.BRUSH
+var tool_button_group: ButtonGroup
 
 # ツールパラメータ
 static var stroke_color = Color.BLACK
@@ -64,6 +67,8 @@ func _ready():
 	var layer_btn = find_child("LayerButton", true, false)
 	if layer_btn:
 		layer_btn.pressed.connect(func(): layer_manager.show())
+	
+	_setup_tool_buttons()
 
 
 func _on_navigator_draw():
@@ -205,10 +210,38 @@ func _on_h_slider_value_changed(value):
 	stroke_width = value
 
 func _on_brush_button_pressed():
-	current_tool = Tool.BRUSH
+	_set_tool(Tool.BRUSH)
 
 func _on_eraser_button_pressed():
-	current_tool = Tool.ERASER
+	_set_tool(Tool.ERASER)
+
+func _set_tool(tool: Tool):
+	current_tool = tool
+	_update_tool_buttons()
+
+func _setup_tool_buttons():
+	if !brush_button or !eraser_button:
+		return
+	
+	if brush_button.button_group:
+		tool_button_group = brush_button.button_group
+	elif eraser_button.button_group:
+		tool_button_group = eraser_button.button_group
+	else:
+		tool_button_group = ButtonGroup.new()
+	
+	brush_button.toggle_mode = true
+	eraser_button.toggle_mode = true
+	brush_button.button_group = tool_button_group
+	eraser_button.button_group = tool_button_group
+	_update_tool_buttons()
+
+func _update_tool_buttons():
+	if !brush_button or !eraser_button:
+		return
+	
+	brush_button.button_pressed = current_tool == Tool.BRUSH
+	eraser_button.button_pressed = current_tool == Tool.ERASER
 
 func _on_canvas_updated():
 	if show_navigator:
