@@ -48,7 +48,7 @@ func handle_input(event):
 			paint_canvas._update_move(event.position)
 			paint_canvas.get_viewport().set_input_as_handled()
 		elif paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(last_input_position):
-			paint_canvas.commit_line(paint_canvas.last_draw_position, last_input_position, Main.stroke_color, Main.stroke_width)
+			paint_canvas.commit_line(paint_canvas.last_draw_position, last_input_position, _get_stroke_color_for_tool(main), Main.stroke_width)
 			paint_canvas.last_draw_position = last_input_position
 		elif is_connecting_points:
 			connection_end_point = last_input_position
@@ -131,7 +131,7 @@ func handle_input(event):
 									paint_canvas._start_resize(edge, event.position)
 							else:
 								if !paint_canvas.is_drawing:
-									paint_canvas.commit_line(local_pos, local_pos, Main.stroke_color, Main.stroke_width)
+									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
 								paint_canvas.is_drawing = true
 								paint_canvas.last_draw_position = local_pos
 								last_input_position = local_pos
@@ -143,7 +143,7 @@ func handle_input(event):
 							elif paint_canvas.is_drawing:
 								paint_canvas.is_drawing = false
 								if paint_canvas.last_draw_position != local_pos:
-									paint_canvas.commit_line(local_pos, local_pos, Main.stroke_color, Main.stroke_width)
+									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
 
 						paint_canvas.get_viewport().set_input_as_handled()
 
@@ -190,6 +190,9 @@ func handle_input(event):
 		# ストロークガイドのクリア（Ctrl+C）
 		elif event.keycode == KEY_C and event.ctrl_pressed:
 			paint_canvas.canvas_draw.clear_stroke_guide()
+
+func _get_stroke_color_for_tool(main: Main) -> Color:
+	return Main.stroke_color if main.current_tool == Main.Tool.BRUSH else Color.TRANSPARENT
 
 func _check_grid_intersection(from: Vector2, to: Vector2):
 	if not paint_canvas._is_position_in_canvas(from) or not paint_canvas._is_position_in_canvas(to):
