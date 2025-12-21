@@ -1,8 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://dplna0ffyccau"]
+[gd_scene load_steps=6 format=3 uid="uid://dplna0ffyccau"]
 
 [ext_resource type="Script" uid="uid://b24bdijxg858m" path="res://Main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://ctljkh2c0d1p5" path="res://DraggableNavigator.gd" id="2_6pmi3"]
 [ext_resource type="PackedScene" uid="uid://dijdpgcxp8ebt" path="res://canvas/layer_manager_scene.tscn" id="2_r0du0"]
+[ext_resource type="Script" path="res://DraggablePanel.gd" id="3_ticcg"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_blarn"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_blarn"]
 
@@ -90,6 +93,7 @@ offset_top = 50.0
 offset_right = 170.0
 offset_bottom = 150.0
 custom_minimum_size = Vector2(160, 100)
+script = ExtResource("3_ticcg")
 
 [node name="MarginContainer" type="MarginContainer" parent="ToolWindow"]
 layout_mode = 2
