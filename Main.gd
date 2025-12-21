@@ -9,7 +9,6 @@ class_name Main
 @onready var navigator_texture_rect: TextureRect = $NavigatorTextureRect
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
 
-var preview_lines_editor: Window
 var active_paint_canvas: Node2D = null
 
 # 無限キャンバスの参照
@@ -59,11 +58,6 @@ func _ready():
 	
 	# ナビゲーターのリサイズシグナルを接続
 	navigator_texture_rect.resized.connect(_on_navigator_texture_rect_resized)
-	
-	# プレビュー線エディタの追加
-	preview_lines_editor = preload("res://PreviewLinesEditor.tscn").instantiate()
-	add_child(preview_lines_editor)
-	preview_lines_editor.hide()  # 初期状態では非表示
 	
 	# "Layers"ボタンが押されたらウィンドウを表示する接続
 	# （ボタンのパスは実際の配置に合わせてください）
@@ -228,21 +222,6 @@ func _on_navigator_texture_rect_resized():
 		navigator_viewport.get_child(0).queue_redraw()
 
 
-func _toggle_preview_lines_editor():
-	if preview_lines_editor.visible:
-		preview_lines_editor.hide()
-	else:
-		var active_canvas = _get_active_paint_canvas()
-		if active_canvas:
-			preview_lines_editor.set_active_canvas(active_canvas)
-			preview_lines_editor.show()
-
-# タブが変更されたときのハンドラを追加
-func _on_tab_container_tab_changed(tab: int):
-	var active_canvas = _get_active_paint_canvas()
-	if active_canvas and preview_lines_editor.visible:
-		preview_lines_editor.set_active_canvas(active_canvas)
-
 # 無限キャンバスの保存
 # 無限キャンバスの保存
 func _save_infinite_canvas(infinite_canvas: Node):
@@ -325,9 +304,6 @@ func _load_infinite_canvas():
 	
 	file_dialog.popup_centered()
 
-func _on_view_pressed():
-	_toggle_preview_lines_editor()
-	
 # キャンバスが選択された時の処理を追加
 func _on_canvas_input(canvas: Node2D, event: InputEvent):
 	if event is InputEventMouseButton and event.pressed:
