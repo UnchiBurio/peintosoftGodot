@@ -85,6 +85,7 @@ var grid_intersection_history_length: int = 10  # 交点履歴の保持数
 signal canvas_updated
 signal layer_structure_changed # レイヤーの追加・削除時に発火
 signal active_layer_changed(index) # アクティブレイヤー変更時に発火
+signal preview_lines_requested(lines)
 
 @export var highlight_color: Color = Color(0.0, 0.8, 1.0, 1.0) # シアン色
 @export var highlight_width: float = 4.0 # 通常より太くする
@@ -180,49 +181,6 @@ func _unhandled_input(event):
 	canvas_input.handle_input(event)
 
 # シグナル定義
-signal preview_lines_requested(lines)
-
-func _show_preview_lines_window():
-	var window = load("res://PreviewLinesWindow.tscn").instantiate()
-	get_tree().root.add_child(window)
-	
-	# プレビュー線のデータを収集
-	var lines_data = []
-	for point in preview_points:
-		lines_data.append({
-			"position": point.position,
-			"properties": point.properties
-		})
-	for connection in preview_connections:
-		lines_data.append({
-			"start": connection.start,
-			"end": connection.end
-		})
-	
-	# シグナルを送信してデータを渡す
-	preview_lines_requested.emit(lines_data)
-	window.set_preview_lines(lines_data)
-	
-	# シグナル接続
-	preview_lines_requested.connect(_on_preview_lines_updated)
-	
-func _on_preview_lines_updated(lines_data):
-	preview_points.clear()
-	preview_connections.clear()
-	for line_data in lines_data:
-		if line_data.has("position"):
-			var new_point = CanvasPreview.PreviewPoint.new(line_data.position)
-			if line_data.has("properties"):
-				for property in line_data.properties:
-					new_point.add_property(property)
-			preview_points.append(new_point)
-		elif line_data.has("start") and line_data.has("end"):
-			preview_connections.append({
-				"start": line_data.start,
-				"end": line_data.end
-			})
-	queue_redraw()
-
 func _emit_preview_lines_requested():
 	if show_preview_line:
 		var lines_data = []
@@ -687,14 +645,6 @@ func _save_image_to_file(image: Image) -> void:
 		func():
 			file_dialog.queue_free()
 	)
-	
+
 	# ダイアログを表示
 	file_dialog.popup_centered()
-	
-	# エディタの更新
-func _update_editor():
-	# PreviewLinesEditorウィンドウの参照を取得
-	var editor = get_tree().root.get_node("Main").preview_lines_editor
-	if editor and editor.visible:
-		# エディタが表示されている場合は更新を実行
-		editor.update_editor()
