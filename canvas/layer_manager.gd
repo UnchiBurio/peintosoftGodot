@@ -21,6 +21,7 @@ func _ready():
 	delete_button.pressed.connect(_on_delete_button_pressed)
 	layer_list.item_selected.connect(_on_layer_selected)
 	layer_list.gui_input.connect(_on_layer_list_gui_input)
+	layer_list.item_activated.connect(_on_layer_activated)
 	name_edit.text_submitted.connect(_on_name_submitted)
 	name_edit.text_changed.connect(_on_name_changed)
 	name_edit.focus_exited.connect(func(): _on_name_submitted(name_edit.text))
@@ -126,6 +127,12 @@ func _on_layer_selected(index: int):
 		current_canvas.change_active_layer(index)
 		name_edit.text = current_canvas.layers[index].name
 		visibility_toggle.set_pressed_no_signal(current_canvas.layers[index].visible)
+
+func _on_layer_activated(index: int):
+	_on_layer_selected(index)
+	if name_edit.editable:
+		name_edit.grab_focus()
+		name_edit.select_all()
 
 func _on_name_submitted(new_text: String):
 	if not current_canvas:
