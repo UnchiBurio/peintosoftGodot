@@ -204,9 +204,11 @@ func _create_new_canvas():
 func _on_edit_menu_pressed(id: int):
 	match id:
 		0:  # Undo
-			print("Undo")
+			if active_paint_canvas and active_paint_canvas.has_method("undo"):
+				active_paint_canvas.undo()
 		1:  # Redo
-			print("Redo")
+			if active_paint_canvas and active_paint_canvas.has_method("redo"):
+				active_paint_canvas.redo()
 
 func _on_color_picker_color_changed(color):
 	stroke_color = color

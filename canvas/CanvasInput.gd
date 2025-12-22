@@ -131,6 +131,7 @@ func handle_input(event):
 									paint_canvas._start_resize(edge, event.position)
 							else:
 								if !paint_canvas.is_drawing:
+									paint_canvas.start_stroke_recording()
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
 								paint_canvas.is_drawing = true
 								paint_canvas.last_draw_position = local_pos
@@ -144,6 +145,7 @@ func handle_input(event):
 								paint_canvas.is_drawing = false
 								if paint_canvas.last_draw_position != local_pos:
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+								paint_canvas.finish_stroke_recording()
 
 						paint_canvas.get_viewport().set_input_as_handled()
 
