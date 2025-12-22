@@ -67,8 +67,11 @@ func draw():
 	# チャンクの表示/非表示を制
 	if paint_canvas.deback_mode:
 		for layer in paint_canvas.layers:
-			for chunk in layer.values():
-				chunk.texture_rect.visible = true # 必要に応じて表示/非表示を切り替え
+			for chunk in layer.chunks.values():
+				chunk.texture_rect.visible = layer.visible # 必要に応じて表示/非表示を切り替え
+				
+				if not layer.visible:
+					continue
 				
 				# ズームレベルを考慮したデバッグ表示のスケール調整
 				var zoom_scale = 1.0

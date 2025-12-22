@@ -98,7 +98,9 @@ func _on_navigator_draw():
 	
 	# キャンバスの内容を描画
 	for layer in active_canvas.layers:
-		for chunk in layer.values():
+		if not layer.visible:
+			continue
+		for chunk in layer.chunks.values():
 			var chunk_pos = Vector2(chunk.position * active_canvas.CHUNK_SIZE) * navigator_scale
 			var chunk_preview_pos = preview_pos + chunk_pos
 			var chunk_size = Vector2.ONE * active_canvas.CHUNK_SIZE * navigator_scale
@@ -187,6 +189,9 @@ func _create_new_canvas():
 			active_paint_canvas = child
 			# 入力シグナルを接続
 			child.gui_input.connect(_on_canvas_input.bind(child))
+			
+			if layer_manager:
+				layer_manager.set_target_canvas(active_paint_canvas)
 	
 	# タブに追加
 	canvas_counter += 1
