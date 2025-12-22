@@ -10,6 +10,8 @@ var current_canvas: Node2D = null
 var drag_start_index := -1
 var is_dragging := false
 var _is_updating_ui := false
+var _inline_editor: LineEdit
+var _inline_edit_index := -1
 
 func _ready():
 	# ウィンドウの「閉じる（X）」ボタンが押された時の挙動
@@ -26,9 +28,18 @@ func _ready():
 	name_edit.text_changed.connect(_on_name_changed)
 	name_edit.focus_exited.connect(func(): _on_name_submitted(name_edit.text))
 	visibility_toggle.toggled.connect(_on_visibility_toggled)
+	_setup_inline_editor()
 	
 	# 初期状態
 	_clear_ui()
+
+func _setup_inline_editor():
+	_inline_editor = LineEdit.new()
+	_inline_editor.visible = false
+	_inline_editor.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer_list.add_child(_inline_editor)
+	_inline_editor.text_submitted.connect(_on_inline_edit_submitted)
+	_inline_editor.focus_exited.connect(_cancel_inline_edit)
 
 # Mainから呼ばれる：操作対象のキャンバスを切り替える
 func set_target_canvas(canvas: Node2D):
@@ -130,9 +141,7 @@ func _on_layer_selected(index: int):
 
 func _on_layer_activated(index: int):
 	_on_layer_selected(index)
-	if name_edit.editable:
-		name_edit.grab_focus()
-		name_edit.select_all()
+	_start_inline_edit(index)
 
 func _on_name_submitted(new_text: String):
 	if not current_canvas:
@@ -186,6 +195,31 @@ func _finish_drag(target_index: int):
 		_update_selection(current_canvas.canvas_layer.current_layer_index)
 	drag_start_index = -1
 	is_dragging = false
+
+func _start_inline_edit(index: int):
+	if not current_canvas or index < 0 or index >= current_canvas.layers.size():
+		return
+	_inline_edit_index = index
+	var rect = layer_list.get_item_rect(index)
+	_inline_editor.position = rect.position
+	_inline_editor.size = rect.size
+	_inline_editor.text = current_canvas.layers[index].name
+	_inline_editor.show()
+	_inline_editor.grab_focus()
+	_inline_editor.select_all()
+
+func _cancel_inline_edit():
+	_inline_edit_index = -1
+	_inline_editor.hide()
+
+func _on_inline_edit_submitted(new_text: String):
+	if _inline_edit_index == -1 or not current_canvas:
+		_cancel_inline_edit()
+		return
+	current_canvas.rename_layer(_inline_edit_index, new_text)
+	_refresh_list()
+	_update_selection(_inline_edit_index)
+	_cancel_inline_edit()
 
 func _get_selected_index() -> int:
 	if layer_list.get_selected_items().is_empty():
