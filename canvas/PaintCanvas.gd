@@ -61,6 +61,10 @@ var cursor_alpha: float = 0.3  # 十字線の透明度
 # 描画関連の変数
 var stroke_history: Array = []
 var current_stroke: Array = []
+var undo_stack: Array = []
+var redo_stack: Array = []
+var is_recording_stroke: bool = false
+var stroke_snapshots: Dictionary = {}
 
 # メニュー関連の変数
 var popup_menu: PopupMenu
@@ -343,6 +347,7 @@ func commit_line(from: Vector2, to: Vector2, color: Color, width: float = 1.0) -
 	
 	# 以下の処理は変更なし
 	for chunk in affected_chunks:
+		_record_chunk_state(chunk, canvas_layer.current_layer_index)
 		var chunk_from = _local_to_chunk_space(from, chunk)
 		var chunk_to = _local_to_chunk_space(to, chunk)
 		canvas_draw.draw_line_in_chunk_optimized(chunk, chunk_from, chunk_to, color, width)
@@ -370,6 +375,7 @@ func commit_rect(rect: Rect2, color: Color, filled: bool = false, width: float =
 	var affected_chunks = _get_affected_chunks(rect)
 	
 	for chunk in affected_chunks:
+		_record_chunk_state(chunk, canvas_layer.current_layer_index)
 		# グローバル座標をチャンク内の相対座標に変換します
 		var local_rect = Rect2(
 			_local_to_chunk_space(rect.position, chunk),
@@ -733,3 +739,94 @@ func _save_image_to_file(image: Image) -> void:
 
 	# ダイアログを表示
 	file_dialog.popup_centered()
+
+# Undo/Redo support
+func start_stroke_recording() -> void:
+	if is_recording_stroke:
+		return
+	is_recording_stroke = true
+	stroke_snapshots.clear()
+
+func finish_stroke_recording() -> void:
+	if not is_recording_stroke:
+		return
+	if stroke_snapshots.size() > 0:
+		var snapshot_array: Array = []
+		for value in stroke_snapshots.values():
+			snapshot_array.append(value)
+		undo_stack.append(snapshot_array)
+		redo_stack.clear()
+	stroke_snapshots.clear()
+	is_recording_stroke = false
+
+func undo() -> void:
+	if undo_stack.is_empty():
+		return
+	var last_action: Array = undo_stack.pop_back()
+	var redo_action: Array = []
+	for entry in last_action:
+		var layer_index: int = entry["layer_index"]
+		var chunk_pos: Vector2i = entry["position"]
+		var chunk = _get_or_create_layer_chunk(layer_index, chunk_pos)
+		if chunk == null:
+			continue
+		var redo_image = chunk.image.duplicate()
+		redo_action.append({
+			"layer_index": layer_index,
+			"position": chunk_pos,
+			"image": redo_image,
+		})
+		chunk.image = entry["image"].duplicate()
+		chunk.texture = ImageTexture.create_from_image(chunk.image)
+		chunk.texture_rect.texture = chunk.texture
+		chunk.mark_dirty()
+	redo_stack.append(redo_action)
+	canvas_draw.process_pending_updates(true)
+	queue_redraw()
+	emit_signal("canvas_updated")
+
+func redo() -> void:
+	if redo_stack.is_empty():
+		return
+	var action: Array = redo_stack.pop_back()
+	var undo_action: Array = []
+	for entry in action:
+		var layer_index: int = entry["layer_index"]
+		var chunk_pos: Vector2i = entry["position"]
+		var chunk = _get_or_create_layer_chunk(layer_index, chunk_pos)
+		if chunk == null:
+			continue
+		var undo_image = chunk.image.duplicate()
+		undo_action.append({
+			"layer_index": layer_index,
+			"position": chunk_pos,
+			"image": undo_image,
+		})
+		chunk.image = entry["image"].duplicate()
+		chunk.texture = ImageTexture.create_from_image(chunk.image)
+		chunk.texture_rect.texture = chunk.texture
+		chunk.mark_dirty()
+	undo_stack.append(undo_action)
+	canvas_draw.process_pending_updates(true)
+	queue_redraw()
+	emit_signal("canvas_updated")
+
+func _record_chunk_state(chunk: CanvasChunk, layer_index: int) -> void:
+	if not is_recording_stroke:
+		return
+	var key = "%d_%d_%d" % [layer_index, chunk.position.x, chunk.position.y]
+	if stroke_snapshots.has(key):
+		return
+	stroke_snapshots[key] = {
+		"layer_index": layer_index,
+		"position": chunk.position,
+		"image": chunk.image.duplicate()
+	}
+
+func _get_or_create_layer_chunk(layer_index: int, chunk_pos: Vector2i) -> CanvasChunk:
+	if layer_index < 0 or layer_index >= layers.size():
+		return null
+	var layer = layers[layer_index]
+	if not layer.chunks.has(chunk_pos):
+		layer.chunks[chunk_pos] = _get_or_create_chunk(chunk_pos, layer_index)
+	return layer.chunks[chunk_pos]
