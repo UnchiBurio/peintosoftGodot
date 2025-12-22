@@ -9,6 +9,7 @@ extends Window
 var current_canvas: Node2D = null
 var drag_start_index := -1
 var is_dragging := false
+var _is_updating_ui := false
 
 func _ready():
 	# ウィンドウの「閉じる（X）」ボタンが押された時の挙動
@@ -21,6 +22,7 @@ func _ready():
 	layer_list.item_selected.connect(_on_layer_selected)
 	layer_list.gui_input.connect(_on_layer_list_gui_input)
 	name_edit.text_submitted.connect(_on_name_submitted)
+	name_edit.text_changed.connect(_on_name_changed)
 	name_edit.focus_exited.connect(func(): _on_name_submitted(name_edit.text))
 	visibility_toggle.toggled.connect(_on_visibility_toggled)
 	
@@ -97,10 +99,12 @@ func _update_selection(index: int):
 	layer_list.deselect_all()
 	if layer_list.item_count > index:
 		layer_list.select(index)
+		_is_updating_ui = true
 		name_edit.editable = true
 		name_edit.text = current_canvas.layers[index].name
 		visibility_toggle.disabled = false
 		visibility_toggle.set_pressed_no_signal(current_canvas.layers[index].visible)
+		_is_updating_ui = false
 	else:
 		name_edit.editable = false
 		name_edit.text = ""
@@ -133,6 +137,11 @@ func _on_name_submitted(new_text: String):
 	_refresh_list()
 	_update_selection(index)
 
+func _on_name_changed(new_text: String):
+	if _is_updating_ui:
+		return
+	_on_name_submitted(new_text)
+
 func _on_visibility_toggled(toggled_on: bool):
 	if not current_canvas:
 		return
@@ -147,6 +156,12 @@ func _on_layer_list_gui_input(event: InputEvent):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			drag_start_index = layer_list.get_item_at_position(event.position, true)
+			if drag_start_index != -1 and event.position.x <= 24:
+				current_canvas.set_layer_visibility(drag_start_index, !current_canvas.layers[drag_start_index].visible)
+				_refresh_list()
+				_update_selection(current_canvas.canvas_layer.current_layer_index)
+				drag_start_index = -1
+				return
 		else:
 			if is_dragging:
 				var target_index = layer_list.get_item_at_position(event.position, true)
