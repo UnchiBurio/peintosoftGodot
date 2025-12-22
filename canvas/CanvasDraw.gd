@@ -23,6 +23,16 @@ func draw():
 	var current_time = Time.get_ticks_msec()
 	var main = paint_canvas.get_tree().root.get_node("Main")
 	
+	# ベクターツールのプレビュー描画
+	if paint_canvas.is_drawing_vector and paint_canvas.vector_points.size() > 0:
+		var preview_color = Main.stroke_color
+		var points = paint_canvas.vector_points
+		for i in range(1, points.size()):
+			paint_canvas.draw_line(points[i - 1], points[i], preview_color, Main.stroke_width)
+		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
+			paint_canvas.draw_line(points[-1], paint_canvas.last_input_position, preview_color.lightened(0.2), Main.stroke_width)
+		for point in points:
+			paint_canvas.draw_circle(point, 4.0, preview_color)
 	
 	# プレビュー線が表示されている場合のみストロークガイドを描画
 	if paint_canvas.show_preview_line and show_stroke_guide and is_guide_active and paint_canvas.is_drawing:

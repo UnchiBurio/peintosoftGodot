@@ -77,6 +77,10 @@ var canvas_move: CanvasMove
 var canvas_layer: PaintCanvasLayer
 var canvas_preview: CanvasPreview
 
+# ベクターツール関連
+var vector_points: PackedVector2Array = PackedVector2Array()
+var is_drawing_vector: bool = false
+
 # 点の性質を表す列挙型
 enum PointProperty {
 	NONE = 0,
@@ -369,6 +373,42 @@ func is_valid_draw_position(position: Vector2) -> bool:
 	# ローカル座標でのキャンバス範囲チェック
 	var local_rect = Rect2(Vector2.ZERO, canvas_size)
 	return local_rect.has_point(position)
+
+func start_vector_path(start_pos: Vector2) -> void:
+	vector_points.clear()
+	is_drawing_vector = true
+	vector_points.append(start_pos)
+	queue_redraw()
+
+func add_vector_point(point: Vector2, snap_axis: bool) -> void:
+	if vector_points.is_empty():
+		start_vector_path(point)
+		return
+	var last = vector_points[-1]
+	if snap_axis:
+		var delta = point - last
+		if abs(delta.x) > abs(delta.y):
+			point.y = last.y
+		elif abs(delta.y) > abs(delta.x):
+			point.x = last.x
+	vector_points.append(point)
+	queue_redraw()
+
+func finish_vector_path() -> void:
+	if vector_points.size() < 2:
+		cancel_vector_path()
+		return
+	start_stroke_recording()
+	for i in range(1, vector_points.size()):
+		commit_line(vector_points[i - 1], vector_points[i], Main.stroke_color, Main.stroke_width)
+	finish_stroke_recording()
+	cancel_vector_path()
+	queue_redraw()
+
+func cancel_vector_path() -> void:
+	vector_points.clear()
+	is_drawing_vector = false
+	queue_redraw()
 
 func commit_rect(rect: Rect2, color: Color, filled: bool = false, width: float = 1.0) -> void:
 	# まず影響を受けるチャンクを特定します

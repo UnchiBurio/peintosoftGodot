@@ -39,6 +39,8 @@ func handle_input(event):
 		paint_canvas.last_input_position = last_input_position
 		var local_pos = paint_canvas.to_local(event.position)
 		
+		if paint_canvas.is_drawing_vector:
+			paint_canvas.queue_redraw()
 	
 		if paint_canvas.canvas_resize.is_resizing:
 			paint_canvas._update_resize(event.position)
@@ -81,6 +83,20 @@ func handle_input(event):
 		var local_pos = paint_canvas.to_local(event.position)
 		
 		if event is InputEventMouseButton:
+			if main.current_tool == Main.Tool.VECTOR:
+				match event.button_index:
+					MOUSE_BUTTON_LEFT:
+						if event.pressed and paint_canvas.is_valid_draw_position(local_pos):
+							paint_canvas.add_vector_point(local_pos, Input.is_key_pressed(KEY_SHIFT))
+							paint_canvas.get_viewport().set_input_as_handled()
+						elif not event.pressed:
+							paint_canvas.get_viewport().set_input_as_handled()
+						return
+					MOUSE_BUTTON_RIGHT:
+						if event.pressed:
+							paint_canvas.finish_vector_path()
+						paint_canvas.get_viewport().set_input_as_handled()
+						return
 			match event.button_index:
 				MOUSE_BUTTON_RIGHT:
 					if paint_canvas.show_preview_line:

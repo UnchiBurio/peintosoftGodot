@@ -10,6 +10,7 @@ class_name Main
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
+@onready var vector_button: Button = $ToolWindow/MarginContainer/VBoxContainer/VectorButton
 
 var active_paint_canvas: Node2D = null
 
@@ -20,7 +21,7 @@ var infinite_canvas: Node2D
 var canvas_counter := 0  # 新規キャンバスの連番用
 
 # ツールの状態
-enum Tool {BRUSH, ERASER}
+enum Tool {BRUSH, ERASER, VECTOR}
 var current_tool = Tool.BRUSH
 var tool_button_group: ButtonGroup
 
@@ -222,33 +223,40 @@ func _on_brush_button_pressed():
 func _on_eraser_button_pressed():
 	_set_tool(Tool.ERASER)
 
+func _on_vector_button_pressed():
+	_set_tool(Tool.VECTOR)
+
 func _set_tool(tool: Tool):
+	if current_tool == Tool.VECTOR and tool != Tool.VECTOR and active_paint_canvas and active_paint_canvas.has_method("cancel_vector_path"):
+		active_paint_canvas.cancel_vector_path()
 	current_tool = tool
 	_update_tool_buttons()
 
 func _setup_tool_buttons():
-	if !brush_button or !eraser_button:
+	if !brush_button or !eraser_button or !vector_button:
 		return
-	
+
 	if brush_button.button_group:
 		tool_button_group = brush_button.button_group
 	elif eraser_button.button_group:
 		tool_button_group = eraser_button.button_group
+	elif vector_button.button_group:
+		tool_button_group = vector_button.button_group
 	else:
 		tool_button_group = ButtonGroup.new()
-	
-	brush_button.toggle_mode = true
-	eraser_button.toggle_mode = true
-	brush_button.button_group = tool_button_group
-	eraser_button.button_group = tool_button_group
+
+	for button in [brush_button, eraser_button, vector_button]:
+		button.toggle_mode = true
+		button.button_group = tool_button_group
 	_update_tool_buttons()
 
 func _update_tool_buttons():
-	if !brush_button or !eraser_button:
+	if !brush_button or !eraser_button or !vector_button:
 		return
-	
+
 	brush_button.button_pressed = current_tool == Tool.BRUSH
 	eraser_button.button_pressed = current_tool == Tool.ERASER
+	vector_button.button_pressed = current_tool == Tool.VECTOR
 
 func _on_canvas_updated():
 	if show_navigator:
