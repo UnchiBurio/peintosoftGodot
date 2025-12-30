@@ -241,6 +241,17 @@ func draw():
 				1.0
 			)
 
+	# 円ツールのプレビュー描画
+	if paint_canvas.canvas_input and paint_canvas.canvas_input.is_drawing_circle:
+		var center = paint_canvas.canvas_input.circle_start_pos
+		var radius = center.distance_to(paint_canvas.canvas_input.circle_current_pos)
+		if radius > 0.0:
+			paint_canvas.draw_circle(
+				center,
+				radius,
+				Main.stroke_color
+			)
+
 func _draw_grid():
 	var size = paint_canvas.canvas_size
 	var grid_size = paint_canvas.grid_size
