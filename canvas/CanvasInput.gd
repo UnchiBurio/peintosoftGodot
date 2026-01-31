@@ -23,6 +23,7 @@ func handle_input(event):
 		
 	if event is InputEventMouseMotion or event is InputEventScreenDrag:
 		var new_position = paint_canvas.to_local(event.position)
+		var movement_delta = new_position - last_input_position
 		
 		# グリッドハイライトが有効な場合は交点チェック
 		if paint_canvas.show_grid and paint_canvas.show_grid_highlight:
@@ -75,6 +76,18 @@ func handle_input(event):
 		# ストロークガイドの更新
 		if paint_canvas.canvas_draw.show_stroke_guide and paint_canvas.preview_points.size() > 0 and paint_canvas.is_drawing:
 			paint_canvas.canvas_draw.update_stroke_guide(new_position)
+		
+		# 回転クロスヘアの更新
+		if paint_canvas.show_directional_crosshair and paint_canvas.is_drawing:
+			if movement_delta.length() >= paint_canvas.directional_crosshair_min_movement:
+				var target_angle = movement_delta.angle()
+				paint_canvas.directional_crosshair_angle = lerp_angle(
+					paint_canvas.directional_crosshair_angle,
+					target_angle,
+					paint_canvas.directional_crosshair_smoothing
+				)
+				paint_canvas.directional_crosshair_position = new_position
+			paint_canvas.queue_redraw()
 
 	# マウスボタンとタッチ入力の処理
 	elif event is InputEventMouseButton or event is InputEventScreenTouch:
@@ -183,6 +196,11 @@ func handle_input(event):
 		# カーソル十字の表示制御（Oキー）
 		elif event.keycode == KEY_O:
 			paint_canvas.show_cursor_cross = not paint_canvas.show_cursor_cross
+			paint_canvas.queue_redraw()
+		
+		# 回転クロスヘアの表示制御（Iキー）
+		elif event.keycode == KEY_I:
+			paint_canvas.show_directional_crosshair = not paint_canvas.show_directional_crosshair
 			paint_canvas.queue_redraw()
 		
 		# レイヤー追加（Lキー）
