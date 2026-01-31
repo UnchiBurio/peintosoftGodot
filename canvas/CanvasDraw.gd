@@ -218,6 +218,31 @@ func draw():
 				connection.style.width
 			)
 	
+	# ペン入力中の移動方向クロスヘア
+	if paint_canvas.show_directional_crosshair and paint_canvas.is_pen_input_active:
+		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
+			var direction = paint_canvas.last_cursor_direction
+			if direction.length() > 0.0:
+				var line_color = paint_canvas.cursor_color
+				line_color.a = paint_canvas.cursor_alpha
+				var center = paint_canvas.last_input_position
+				var half_length = paint_canvas.directional_crosshair_length * 0.5
+				var axis = direction.normalized() * half_length
+				var perpendicular = axis.rotated(PI / 2.0)
+				
+				paint_canvas.draw_line(
+					center - axis,
+					center + axis,
+					line_color,
+					paint_canvas.directional_crosshair_width
+				)
+				paint_canvas.draw_line(
+					center - perpendicular,
+					center + perpendicular,
+					line_color,
+					paint_canvas.directional_crosshair_width
+				)
+	
 	# キャンバスサイズに合わせた十字カーソルの描画
 	if paint_canvas.show_cursor_cross:
 		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
