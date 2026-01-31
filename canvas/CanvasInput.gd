@@ -22,6 +22,7 @@ func handle_input(event):
 			return
 		
 	if event is InputEventMouseMotion or event is InputEventScreenDrag:
+		var previous_position = last_input_position
 		var new_position = paint_canvas.to_local(event.position)
 		
 		# グリッドハイライトが有効な場合は交点チェック
@@ -30,6 +31,12 @@ func handle_input(event):
 		
 		last_input_position = new_position
 		paint_canvas.last_input_position = new_position
+		
+		if paint_canvas.is_pen_input_active and paint_canvas.is_drawing:
+			var movement_delta = new_position - previous_position
+			if movement_delta.length() > 0.1:
+				paint_canvas.last_cursor_direction = movement_delta.normalized()
+			paint_canvas.queue_redraw()
 		
 		if paint_canvas.show_grid and paint_canvas.show_grid_highlight:
 			_update_grid_history(last_input_position)
@@ -123,6 +130,7 @@ func handle_input(event):
 				MOUSE_BUTTON_LEFT:
 					if paint_canvas.is_valid_draw_position(local_pos) or (Input.is_key_pressed(KEY_ALT) and paint_canvas._get_resize_edge(local_pos) != Vector2.ZERO):
 						if event.pressed:
+							paint_canvas.is_pen_input_active = event.pressure > 0.0
 							if Input.is_key_pressed(KEY_CTRL):
 								paint_canvas._start_move(event.position)
 							elif Input.is_key_pressed(KEY_ALT):
@@ -137,6 +145,7 @@ func handle_input(event):
 								paint_canvas.last_draw_position = local_pos
 								last_input_position = local_pos
 						else:
+							paint_canvas.is_pen_input_active = false
 							if paint_canvas.canvas_resize.is_resizing:
 								paint_canvas._end_resize()
 							elif paint_canvas.canvas_move.is_moving:
