@@ -58,6 +58,14 @@ var show_cursor_cross: bool = false
 var cursor_color: Color = Color.BLACK  # 十字の色
 var cursor_alpha: float = 0.3  # 十字線の透明度
 
+# 回転クロスヘア関連の変数
+var show_directional_crosshair: bool = false
+var directional_crosshair_color: Color = Color.BLACK
+var directional_crosshair_alpha: float = 0.6
+var directional_crosshair_length: float = 18.0
+var directional_crosshair_angle: float = 0.0
+var directional_crosshair_position: Vector2 = Vector2.ZERO
+
 # 描画関連の変数
 var stroke_history: Array = []
 var current_stroke: Array = []
