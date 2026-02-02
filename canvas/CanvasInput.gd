@@ -219,7 +219,7 @@ func handle_input(event):
 			paint_canvas.canvas_draw.clear_stroke_guide()
 
 func _get_stroke_color_for_tool(main: Main) -> Color:
-	return Main.stroke_color if main.current_tool == Main.Tool.BRUSH else Color.TRANSPARENT
+	return Color.TRANSPARENT if main.current_tool == Main.Tool.ERASER else Main.stroke_color
 
 func _check_grid_intersection(from: Vector2, to: Vector2):
 	if not paint_canvas._is_position_in_canvas(from) or not paint_canvas._is_position_in_canvas(to):
