@@ -143,6 +143,13 @@ func handle_input(event):
 								if edge != Vector2.ZERO:
 									paint_canvas._start_resize(edge, event.position)
 							else:
+								if main.current_tool == Main.Tool.FILL:
+									if paint_canvas.is_valid_draw_position(local_pos):
+										paint_canvas.start_stroke_recording()
+										paint_canvas.fill_at(local_pos, _get_stroke_color_for_tool(main))
+										paint_canvas.finish_stroke_recording()
+									paint_canvas.get_viewport().set_input_as_handled()
+									return
 								if !paint_canvas.is_drawing:
 									paint_canvas.start_stroke_recording()
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
