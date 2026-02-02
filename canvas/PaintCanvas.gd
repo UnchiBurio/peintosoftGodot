@@ -407,6 +407,70 @@ func commit_rect(rect: Rect2, color: Color, filled: bool = false, width: float =
 	
 	queue_redraw()
 
+# 塗りつぶし処理（フラッドフィル）
+func flood_fill(start_pos: Vector2, fill_color: Color) -> void:
+	if not _is_position_in_canvas(start_pos):
+		return
+
+	var start_point = Vector2i(floor(start_pos.x), floor(start_pos.y))
+	var target_color = _get_layer_pixel(start_point)
+	if _colors_match(target_color, fill_color):
+		return
+
+	var stack: Array[Vector2i] = [start_point]
+	var visited := {}
+	var updated_chunks := {}
+	var current_layer_index = canvas_layer.current_layer_index
+
+	while stack.size() > 0:
+		var point: Vector2i = stack.pop_back()
+		if visited.has(point):
+			continue
+		visited[point] = true
+
+		if point.x < 0 or point.y < 0 or point.x >= int(canvas_size.x) or point.y >= int(canvas_size.y):
+			continue
+
+		if not _colors_match(_get_layer_pixel(point), target_color):
+			continue
+
+		var chunk_pos = _get_chunk_pos(Vector2(point))
+		var chunk = _get_or_create_layer_chunk(current_layer_index, chunk_pos)
+		if chunk == null:
+			continue
+		_record_chunk_state(chunk, current_layer_index)
+		var local_pos = _get_local_pos(Vector2(point))
+		chunk.image.set_pixel(local_pos.x, local_pos.y, fill_color)
+		updated_chunks[chunk_pos] = chunk
+
+		stack.append(point + Vector2i(1, 0))
+		stack.append(point + Vector2i(-1, 0))
+		stack.append(point + Vector2i(0, 1))
+		stack.append(point + Vector2i(0, -1))
+
+	for chunk in updated_chunks.values():
+		chunk.mark_dirty()
+		canvas_draw._pending_updates[chunk.position] = chunk
+		canvas_draw.chunk_update_times[chunk.position] = Time.get_ticks_msec()
+		if not chunk in active_chunks:
+			active_chunks.append(chunk)
+
+	canvas_draw.process_pending_updates()
+	queue_redraw()
+
+# レイヤーの指定ピクセル色取得
+func _get_layer_pixel(position: Vector2i) -> Color:
+	var chunk_pos = _get_chunk_pos(Vector2(position))
+	var layer = layers[canvas_layer.current_layer_index]
+	if not layer.chunks.has(chunk_pos):
+		return Color.TRANSPARENT
+	var chunk = layer.chunks[chunk_pos]
+	var local_pos = _get_local_pos(Vector2(position))
+	return chunk.image.get_pixel(local_pos.x, local_pos.y)
+
+func _colors_match(a: Color, b: Color) -> bool:
+	return a.is_equal_approx(b)
+
 # チャンク内に塗りつぶし四角形を描画
 func _draw_filled_rect_in_chunk(chunk: CanvasChunk, rect: Rect2, color: Color) -> void:
 	# チャンクの有効範囲を定義
