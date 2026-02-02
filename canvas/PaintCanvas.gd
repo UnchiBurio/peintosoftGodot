@@ -417,7 +417,6 @@ func fill_at(position: Vector2, color: Color) -> void:
 	var stack: Array[Vector2i] = [start]
 	var visited := {}
 	var modified_chunks := {}
-	var locked_chunks := {}
 	
 	while stack.size() > 0:
 		var pos = stack.pop_back()
@@ -432,15 +431,12 @@ func fill_at(position: Vector2, color: Color) -> void:
 		if not _colors_match(current_color, target_color):
 			continue
 		
-		_set_color_at_canvas_pos(pos, color, modified_chunks, locked_chunks)
+		_set_color_at_canvas_pos(pos, color, modified_chunks)
 		
 		stack.append(pos + Vector2i(1, 0))
 		stack.append(pos + Vector2i(-1, 0))
 		stack.append(pos + Vector2i(0, 1))
 		stack.append(pos + Vector2i(0, -1))
-	
-	for chunk in locked_chunks.keys():
-		chunk.image.unlock()
 	
 	for chunk in modified_chunks.values():
 		chunk.mark_dirty()
@@ -496,7 +492,7 @@ func _get_color_at_canvas_pos(pos: Vector2i) -> Color:
 	var local_pos = _get_local_pos(Vector2(pos))
 	return chunk.image.get_pixel(local_pos.x, local_pos.y)
 
-func _set_color_at_canvas_pos(pos: Vector2i, color: Color, modified_chunks: Dictionary, locked_chunks: Dictionary) -> void:
+func _set_color_at_canvas_pos(pos: Vector2i, color: Color, modified_chunks: Dictionary) -> void:
 	var chunk_pos = _get_chunk_pos(Vector2(pos))
 	var chunk = _get_or_create_layer_chunk(canvas_layer.current_layer_index, chunk_pos)
 	if chunk == null:
@@ -504,9 +500,6 @@ func _set_color_at_canvas_pos(pos: Vector2i, color: Color, modified_chunks: Dict
 	if not modified_chunks.has(chunk_pos):
 		_record_chunk_state(chunk, canvas_layer.current_layer_index)
 		modified_chunks[chunk_pos] = chunk
-	if not locked_chunks.has(chunk):
-		chunk.image.lock()
-		locked_chunks[chunk] = true
 	var local_pos = _get_local_pos(Vector2(pos))
 	chunk.image.set_pixel(local_pos.x, local_pos.y, color)
 
@@ -914,4 +907,5 @@ func _get_or_create_layer_chunk(layer_index: int, chunk_pos: Vector2i) -> Canvas
 	var layer = layers[layer_index]
 	if not layer.chunks.has(chunk_pos):
 		layer.chunks[chunk_pos] = _get_or_create_chunk(chunk_pos, layer_index)
+		add_child(layer.chunks[chunk_pos].texture_rect)
 	return layer.chunks[chunk_pos]
