@@ -244,9 +244,12 @@ func draw():
 	# 回転クロスヘアの描画
 	if paint_canvas.show_directional_crosshair and paint_canvas.is_drawing:
 		if paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
-			var cross_color = paint_canvas.directional_crosshair_color
-			cross_color.a = paint_canvas.directional_crosshair_alpha
+			var cross_primary_color = paint_canvas.directional_crosshair_primary_color
+			var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color
+			cross_primary_color.a = paint_canvas.directional_crosshair_alpha
+			cross_secondary_color.a = paint_canvas.directional_crosshair_alpha
 			var half_length = paint_canvas.directional_crosshair_length * 0.5
+			var thickness = paint_canvas.directional_crosshair_thickness
 			var direction = Vector2(cos(paint_canvas.directional_crosshair_angle), sin(paint_canvas.directional_crosshair_angle))
 			var perpendicular = direction.rotated(PI / 2.0)
 			var center = paint_canvas.directional_crosshair_position
@@ -254,14 +257,14 @@ func draw():
 			paint_canvas.draw_line(
 				center - direction * half_length,
 				center + direction * half_length,
-				cross_color,
-				1.0
+				cross_primary_color,
+				thickness
 			)
 			paint_canvas.draw_line(
 				center - perpendicular * half_length,
 				center + perpendicular * half_length,
-				cross_color,
-				1.0
+				cross_secondary_color,
+				thickness
 			)
 
 func _draw_grid():

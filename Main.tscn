@@ -145,7 +145,7 @@ offset_left = 180.0
 offset_top = 50.0
 offset_right = 380.0
 offset_bottom = 290.0
-custom_minimum_size = Vector2(200, 240)
+custom_minimum_size = Vector2(200, 300)
 script = ExtResource("3_ticcg")
 
 [node name="MarginContainer" type="MarginContainer" parent="CrosshairWindow"]
@@ -168,15 +168,27 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "表示する"
 
-[node name="CrosshairColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairPrimaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="CrosshairColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairColorRow"]
+[node name="CrosshairPrimaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "色"
+text = "線1 色"
 
-[node name="CrosshairColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairColorRow"]
+[node name="CrosshairPrimaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CrosshairSecondaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CrosshairSecondaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "線2 色"
+
+[node name="CrosshairSecondaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -211,6 +223,22 @@ min_value = 4.0
 max_value = 64.0
 step = 1.0
 value = 18.0
+
+[node name="CrosshairThicknessRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="CrosshairThicknessLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "太さ"
+
+[node name="CrosshairThicknessSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 8.0
+step = 0.5
+value = 1.0
 
 [node name="CrosshairMinMovementRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -249,8 +277,10 @@ value = 0.2
 [connection signal="color_changed" from="ColorPickerButton" to="." method="_on_color_picker_color_changed"]
 [connection signal="value_changed" from="HSlider" to="." method="_on_h_slider_value_changed"]
 [connection signal="toggled" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox" to="." method="_on_crosshair_enabled_toggled"]
-[connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairColorRow/CrosshairColorPicker" to="." method="_on_crosshair_color_changed"]
+[connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker" to="." method="_on_crosshair_primary_color_changed"]
+[connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker" to="." method="_on_crosshair_secondary_color_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSlider" to="." method="_on_crosshair_alpha_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSlider" to="." method="_on_crosshair_length_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSlider" to="." method="_on_crosshair_thickness_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSlider" to="." method="_on_crosshair_min_movement_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSlider" to="." method="_on_crosshair_smoothing_changed"]

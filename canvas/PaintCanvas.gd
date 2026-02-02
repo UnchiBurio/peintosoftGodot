@@ -60,9 +60,11 @@ var cursor_alpha: float = 0.3  # 十字線の透明度
 
 # 回転クロスヘア関連の変数
 var show_directional_crosshair: bool = false
-var directional_crosshair_color: Color = Color.BLACK
+var directional_crosshair_primary_color: Color = Color.BLACK
+var directional_crosshair_secondary_color: Color = Color.BLACK
 var directional_crosshair_alpha: float = 0.6
 var directional_crosshair_length: float = 18.0
+var directional_crosshair_thickness: float = 1.0
 var directional_crosshair_angle: float = 0.0
 var directional_crosshair_position: Vector2 = Vector2.ZERO
 var directional_crosshair_min_movement: float = 2.0

@@ -11,9 +11,11 @@ class_name Main
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 @onready var crosshair_enabled_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox
-@onready var crosshair_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairColorRow/CrosshairColorPicker
+@onready var crosshair_primary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker
+@onready var crosshair_secondary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker
 @onready var crosshair_alpha_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSlider
 @onready var crosshair_length_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSlider
+@onready var crosshair_thickness_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSlider
 @onready var crosshair_min_movement_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSlider
 @onready var crosshair_smoothing_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSlider
 
@@ -36,9 +38,11 @@ static var stroke_width = 1.0
 
 # 回転クロスヘア設定
 var directional_crosshair_enabled: bool = false
-var directional_crosshair_color: Color = Color.BLACK
+var directional_crosshair_primary_color: Color = Color.BLACK
+var directional_crosshair_secondary_color: Color = Color.BLACK
 var directional_crosshair_alpha: float = 0.6
 var directional_crosshair_length: float = 18.0
+var directional_crosshair_thickness: float = 1.0
 var directional_crosshair_min_movement: float = 2.0
 var directional_crosshair_smoothing: float = 0.2
 
@@ -61,10 +65,12 @@ func _ready():
 	
 	# 初期カラーを設定
 	color_picker.color = stroke_color
-	crosshair_color_picker.color = directional_crosshair_color
+	crosshair_primary_color_picker.color = directional_crosshair_primary_color
+	crosshair_secondary_color_picker.color = directional_crosshair_secondary_color
 	crosshair_enabled_checkbox.button_pressed = directional_crosshair_enabled
 	crosshair_alpha_slider.value = directional_crosshair_alpha
 	crosshair_length_slider.value = directional_crosshair_length
+	crosshair_thickness_slider.value = directional_crosshair_thickness
 	crosshair_min_movement_slider.value = directional_crosshair_min_movement
 	crosshair_smoothing_slider.value = directional_crosshair_smoothing
 	
@@ -409,9 +415,11 @@ func _apply_directional_crosshair_settings(canvas: Node2D) -> void:
 	if not canvas:
 		return
 	canvas.show_directional_crosshair = directional_crosshair_enabled
-	canvas.directional_crosshair_color = directional_crosshair_color
+	canvas.directional_crosshair_primary_color = directional_crosshair_primary_color
+	canvas.directional_crosshair_secondary_color = directional_crosshair_secondary_color
 	canvas.directional_crosshair_alpha = directional_crosshair_alpha
 	canvas.directional_crosshair_length = directional_crosshair_length
+	canvas.directional_crosshair_thickness = directional_crosshair_thickness
 	canvas.directional_crosshair_min_movement = directional_crosshair_min_movement
 	canvas.directional_crosshair_smoothing = directional_crosshair_smoothing
 	canvas.queue_redraw()
@@ -420,8 +428,12 @@ func _on_crosshair_enabled_toggled(pressed: bool) -> void:
 	directional_crosshair_enabled = pressed
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
-func _on_crosshair_color_changed(color: Color) -> void:
-	directional_crosshair_color = color
+func _on_crosshair_primary_color_changed(color: Color) -> void:
+	directional_crosshair_primary_color = color
+	_apply_directional_crosshair_settings(active_paint_canvas)
+
+func _on_crosshair_secondary_color_changed(color: Color) -> void:
+	directional_crosshair_secondary_color = color
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_alpha_changed(value: float) -> void:
@@ -430,6 +442,10 @@ func _on_crosshair_alpha_changed(value: float) -> void:
 
 func _on_crosshair_length_changed(value: float) -> void:
 	directional_crosshair_length = value
+	_apply_directional_crosshair_settings(active_paint_canvas)
+
+func _on_crosshair_thickness_changed(value: float) -> void:
+	directional_crosshair_thickness = value
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_min_movement_changed(value: float) -> void:
