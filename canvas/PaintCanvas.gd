@@ -69,6 +69,20 @@ var directional_crosshair_angle: float = 0.0
 var directional_crosshair_position: Vector2 = Vector2.ZERO
 var directional_crosshair_min_movement: float = 2.0
 var directional_crosshair_smoothing: float = 0.2
+var directional_crosshair_trail_interval: float = 20.0
+var directional_crosshair_trail_persist: bool = false
+var directional_crosshair_trail_marks: Array = []
+var directional_crosshair_trail_distance: float = 0.0
+var directional_crosshair_trail_last_position: Vector2 = Vector2.ZERO
+
+class CrosshairTrailMark:
+	extends RefCounted
+	var position: Vector2
+	var angle: float
+
+	func _init(mark_position: Vector2, mark_angle: float):
+		position = mark_position
+		angle = mark_angle
 
 # 描画関連の変数
 var stroke_history: Array = []
@@ -183,6 +197,45 @@ func _update_chunk_constants():
 
 func _draw():
 	canvas_draw.draw()
+
+func start_crosshair_trail(position: Vector2) -> void:
+	directional_crosshair_trail_last_position = position
+	directional_crosshair_trail_distance = 0.0
+
+func update_crosshair_trail(new_position: Vector2, angle: float) -> void:
+	if directional_crosshair_trail_interval <= 0.0:
+		return
+	var segment = new_position - directional_crosshair_trail_last_position
+	var segment_length = segment.length()
+	if segment_length <= 0.0:
+		return
+	var direction = segment / segment_length
+	var remaining = segment_length
+	var current_pos = directional_crosshair_trail_last_position
+	while directional_crosshair_trail_distance + remaining >= directional_crosshair_trail_interval:
+		var distance_needed = directional_crosshair_trail_interval - directional_crosshair_trail_distance
+		var mark_position = current_pos + direction * distance_needed
+		_add_crosshair_trail_mark(mark_position, angle)
+		current_pos = mark_position
+		remaining -= distance_needed
+		directional_crosshair_trail_distance = 0.0
+	if remaining > 0.0:
+		directional_crosshair_trail_distance += remaining
+		current_pos += direction * remaining
+	directional_crosshair_trail_last_position = current_pos
+
+func finish_crosshair_trail() -> void:
+	if directional_crosshair_trail_persist:
+		return
+	clear_crosshair_trail()
+
+func clear_crosshair_trail() -> void:
+	directional_crosshair_trail_marks.clear()
+	queue_redraw()
+
+func _add_crosshair_trail_mark(position: Vector2, angle: float) -> void:
+	directional_crosshair_trail_marks.append(CrosshairTrailMark.new(position, angle))
+	queue_redraw()
 
 func _draw_resize_handles():
 	var handle_color = Color(0.2, 0.6, 1.0, 0.8)

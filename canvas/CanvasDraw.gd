@@ -242,30 +242,37 @@ func draw():
 			)
 	
 	# 回転クロスヘアの描画
-	if paint_canvas.show_directional_crosshair and paint_canvas.is_drawing:
-		if paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
-			var cross_primary_color = paint_canvas.directional_crosshair_primary_color
-			var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color
-			cross_primary_color.a = paint_canvas.directional_crosshair_alpha
-			cross_secondary_color.a = paint_canvas.directional_crosshair_alpha
-			var half_length = paint_canvas.directional_crosshair_length * 0.5
-			var thickness = paint_canvas.directional_crosshair_thickness
-			var direction = Vector2(cos(paint_canvas.directional_crosshair_angle), sin(paint_canvas.directional_crosshair_angle))
-			var perpendicular = direction.rotated(PI / 2.0)
-			var center = paint_canvas.directional_crosshair_position
-			
-			paint_canvas.draw_line(
-				center - direction * half_length,
-				center + direction * half_length,
-				cross_primary_color,
-				thickness
+	if paint_canvas.show_directional_crosshair:
+		for mark in paint_canvas.directional_crosshair_trail_marks:
+			if paint_canvas._is_position_in_canvas(mark.position):
+				_draw_directional_crosshair_at(mark.position, mark.angle)
+		if paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
+			_draw_directional_crosshair_at(
+				paint_canvas.directional_crosshair_position,
+				paint_canvas.directional_crosshair_angle
 			)
-			paint_canvas.draw_line(
-				center - perpendicular * half_length,
-				center + perpendicular * half_length,
-				cross_secondary_color,
-				thickness
-			)
+
+func _draw_directional_crosshair_at(center: Vector2, angle: float) -> void:
+	var cross_primary_color = paint_canvas.directional_crosshair_primary_color
+	var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color
+	cross_primary_color.a = paint_canvas.directional_crosshair_alpha
+	cross_secondary_color.a = paint_canvas.directional_crosshair_alpha
+	var half_length = paint_canvas.directional_crosshair_length * 0.5
+	var thickness = paint_canvas.directional_crosshair_thickness
+	var direction = Vector2(cos(angle), sin(angle))
+	var perpendicular = direction.rotated(PI / 2.0)
+	paint_canvas.draw_line(
+		center - direction * half_length,
+		center + direction * half_length,
+		cross_primary_color,
+		thickness
+	)
+	paint_canvas.draw_line(
+		center - perpendicular * half_length,
+		center + perpendicular * half_length,
+		cross_secondary_color,
+		thickness
+	)
 
 func _draw_grid():
 	var size = paint_canvas.canvas_size
