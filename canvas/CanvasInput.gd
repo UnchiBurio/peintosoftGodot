@@ -10,6 +10,9 @@ var connection_end_point: Vector2
 var is_ctrl_right_click_dragging := false
 var ctrl_right_click_start_pos := Vector2.ZERO
 var selected_point = null
+var is_drawing_circle := false
+var circle_start_pos := Vector2.ZERO
+var circle_current_pos := Vector2.ZERO
 
 func _init(canvas: Node2D):
 	paint_canvas = canvas
@@ -51,6 +54,9 @@ func handle_input(event):
 		elif paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(last_input_position):
 			paint_canvas.commit_line(paint_canvas.last_draw_position, last_input_position, _get_stroke_color_for_tool(main), Main.stroke_width)
 			paint_canvas.last_draw_position = last_input_position
+		elif is_drawing_circle:
+			circle_current_pos = last_input_position
+			paint_canvas.queue_redraw()
 		elif is_connecting_points:
 			connection_end_point = last_input_position
 			paint_canvas.queue_redraw()
@@ -134,9 +140,19 @@ func handle_input(event):
 				MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN:
 					return
 				MOUSE_BUTTON_LEFT:
+					if not event.pressed and is_drawing_circle:
+						_finalize_circle()
+						paint_canvas.get_viewport().set_input_as_handled()
+						return
 					if paint_canvas.is_valid_draw_position(local_pos) or (Input.is_key_pressed(KEY_ALT) and paint_canvas._get_resize_edge(local_pos) != Vector2.ZERO):
 						if event.pressed:
-							if Input.is_key_pressed(KEY_CTRL):
+							if main.current_tool == Main.Tool.CIRCLE:
+								if paint_canvas._is_position_in_canvas(local_pos):
+									is_drawing_circle = true
+									circle_start_pos = local_pos
+									circle_current_pos = local_pos
+									paint_canvas.queue_redraw()
+							elif Input.is_key_pressed(KEY_CTRL):
 								paint_canvas._start_move(event.position)
 							elif Input.is_key_pressed(KEY_ALT):
 								var edge = paint_canvas._get_resize_edge(local_pos)
@@ -159,6 +175,8 @@ func handle_input(event):
 								if paint_canvas.last_draw_position != local_pos:
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
 								paint_canvas.finish_stroke_recording()
+							elif is_drawing_circle:
+								_finalize_circle()
 
 						paint_canvas.get_viewport().set_input_as_handled()
 
@@ -213,6 +231,22 @@ func handle_input(event):
 
 func _get_stroke_color_for_tool(main: Main) -> Color:
 	return Main.stroke_color if main.current_tool == Main.Tool.BRUSH else Color.TRANSPARENT
+
+func _finalize_circle():
+	if not is_drawing_circle:
+		return
+	var radius = circle_start_pos.distance_to(circle_current_pos)
+	if radius <= 0.0:
+		is_drawing_circle = false
+		return
+	paint_canvas.start_stroke_recording()
+	paint_canvas.commit_circle(circle_start_pos, radius, _get_shape_color(), Main.stroke_width)
+	paint_canvas.finish_stroke_recording()
+	is_drawing_circle = false
+	paint_canvas.queue_redraw()
+
+func _get_shape_color() -> Color:
+	return Main.stroke_color
 
 func _check_grid_intersection(from: Vector2, to: Vector2):
 	if not paint_canvas._is_position_in_canvas(from) or not paint_canvas._is_position_in_canvas(to):

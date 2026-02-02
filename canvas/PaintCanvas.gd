@@ -405,6 +405,18 @@ func commit_rect(rect: Rect2, color: Color, filled: bool = false, width: float =
 	
 	queue_redraw()
 
+func commit_circle(center: Vector2, radius: float, color: Color, width: float = 1.0) -> void:
+	if radius <= 0.0:
+		return
+	var segments = max(24, int(radius * 0.5))
+	var angle_step = TAU / float(segments)
+	var previous_point = center + Vector2(radius, 0)
+	for i in range(1, segments + 1):
+		var angle = angle_step * i
+		var next_point = center + Vector2(cos(angle), sin(angle)) * radius
+		commit_line(previous_point, next_point, color, width)
+		previous_point = next_point
+
 # チャンク内に塗りつぶし四角形を描画
 func _draw_filled_rect_in_chunk(chunk: CanvasChunk, rect: Rect2, color: Color) -> void:
 	# チャンクの有効範囲を定義
