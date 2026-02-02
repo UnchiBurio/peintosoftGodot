@@ -19,6 +19,7 @@ func _init(pos: Vector2i, chunk_size: int):
 	# TextureRectの初期化
 	texture_rect = TextureRect.new()
 	texture_rect.z_index=-1
+	texture_rect.show_behind_parent = true
 	texture_rect.texture = texture
 	texture_rect.position = Vector2(pos * chunk_size)
 	texture_rect.size = Vector2(chunk_size, chunk_size)
