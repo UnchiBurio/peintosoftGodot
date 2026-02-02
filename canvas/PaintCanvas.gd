@@ -65,6 +65,8 @@ var directional_crosshair_alpha: float = 0.6
 var directional_crosshair_length: float = 18.0
 var directional_crosshair_angle: float = 0.0
 var directional_crosshair_position: Vector2 = Vector2.ZERO
+var directional_crosshair_min_movement: float = 2.0
+var directional_crosshair_smoothing: float = 0.2
 
 # 描画関連の変数
 var stroke_history: Array = []
