@@ -87,6 +87,7 @@ func handle_input(event):
 					paint_canvas.directional_crosshair_smoothing
 				)
 				paint_canvas.directional_crosshair_position = new_position
+			paint_canvas.update_crosshair_trail(new_position, paint_canvas.directional_crosshair_angle)
 			paint_canvas.queue_redraw()
 
 	# マウスボタンとタッチ入力の処理
@@ -153,6 +154,8 @@ func handle_input(event):
 								if !paint_canvas.is_drawing:
 									paint_canvas.start_stroke_recording()
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+									if paint_canvas.show_directional_crosshair:
+										paint_canvas.start_crosshair_trail(local_pos)
 								paint_canvas.is_drawing = true
 								paint_canvas.last_draw_position = local_pos
 								last_input_position = local_pos
@@ -165,6 +168,8 @@ func handle_input(event):
 								paint_canvas.is_drawing = false
 								if paint_canvas.last_draw_position != local_pos:
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+								if paint_canvas.show_directional_crosshair:
+									paint_canvas.finish_crosshair_trail()
 								paint_canvas.finish_stroke_recording()
 
 						paint_canvas.get_viewport().set_input_as_handled()

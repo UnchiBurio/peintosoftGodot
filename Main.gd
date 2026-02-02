@@ -19,6 +19,9 @@ class_name Main
 @onready var crosshair_thickness_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSlider
 @onready var crosshair_min_movement_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSlider
 @onready var crosshair_smoothing_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSlider
+@onready var crosshair_trail_interval_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSlider
+@onready var crosshair_trail_persist_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailPersistCheckBox
+@onready var crosshair_trail_clear_button: Button = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailClearButton
 
 var active_paint_canvas: Node2D = null
 
@@ -46,6 +49,8 @@ var directional_crosshair_length: float = 18.0
 var directional_crosshair_thickness: float = 1.0
 var directional_crosshair_min_movement: float = 2.0
 var directional_crosshair_smoothing: float = 0.2
+var directional_crosshair_trail_interval: float = 20.0
+var directional_crosshair_trail_persist: bool = false
 
 # ナビゲーター関連の変数
 var show_navigator: bool = true
@@ -74,6 +79,8 @@ func _ready():
 	crosshair_thickness_slider.value = directional_crosshair_thickness
 	crosshair_min_movement_slider.value = directional_crosshair_min_movement
 	crosshair_smoothing_slider.value = directional_crosshair_smoothing
+	crosshair_trail_interval_slider.value = directional_crosshair_trail_interval
+	crosshair_trail_persist_checkbox.button_pressed = directional_crosshair_trail_persist
 	
 	# ナビゲーター用のViewportTextureを設定
 	navigator_texture_rect.texture = navigator_viewport.get_texture()
@@ -431,6 +438,8 @@ func _apply_directional_crosshair_settings(canvas: Node2D) -> void:
 	canvas.directional_crosshair_thickness = directional_crosshair_thickness
 	canvas.directional_crosshair_min_movement = directional_crosshair_min_movement
 	canvas.directional_crosshair_smoothing = directional_crosshair_smoothing
+	canvas.directional_crosshair_trail_interval = directional_crosshair_trail_interval
+	canvas.directional_crosshair_trail_persist = directional_crosshair_trail_persist
 	canvas.queue_redraw()
 
 func _on_crosshair_enabled_toggled(pressed: bool) -> void:
@@ -464,3 +473,15 @@ func _on_crosshair_min_movement_changed(value: float) -> void:
 func _on_crosshair_smoothing_changed(value: float) -> void:
 	directional_crosshair_smoothing = value
 	_apply_directional_crosshair_settings(active_paint_canvas)
+
+func _on_crosshair_trail_interval_changed(value: float) -> void:
+	directional_crosshair_trail_interval = value
+	_apply_directional_crosshair_settings(active_paint_canvas)
+
+func _on_crosshair_trail_persist_toggled(pressed: bool) -> void:
+	directional_crosshair_trail_persist = pressed
+	_apply_directional_crosshair_settings(active_paint_canvas)
+
+func _on_crosshair_trail_clear_pressed() -> void:
+	if active_paint_canvas and active_paint_canvas.has_method("clear_crosshair_trail"):
+		active_paint_canvas.clear_crosshair_trail()
