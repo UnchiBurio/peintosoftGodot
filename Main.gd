@@ -10,6 +10,7 @@ class_name Main
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
+@onready var fill_button: Button = $ToolWindow/MarginContainer/VBoxContainer/FillButton
 @onready var crosshair_enabled_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox
 @onready var crosshair_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairColorRow/CrosshairColorPicker
 @onready var crosshair_alpha_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSlider
@@ -26,7 +27,7 @@ var infinite_canvas: Node2D
 var canvas_counter := 0  # 新規キャンバスの連番用
 
 # ツールの状態
-enum Tool {BRUSH, ERASER}
+enum Tool {BRUSH, ERASER, FILL}
 var current_tool = Tool.BRUSH
 var tool_button_group: ButtonGroup
 
@@ -243,33 +244,41 @@ func _on_brush_button_pressed():
 func _on_eraser_button_pressed():
 	_set_tool(Tool.ERASER)
 
+func _on_fill_button_pressed():
+	_set_tool(Tool.FILL)
+
 func _set_tool(tool: Tool):
 	current_tool = tool
 	_update_tool_buttons()
 
 func _setup_tool_buttons():
-	if !brush_button or !eraser_button:
+	if !brush_button or !eraser_button or !fill_button:
 		return
 	
 	if brush_button.button_group:
 		tool_button_group = brush_button.button_group
 	elif eraser_button.button_group:
 		tool_button_group = eraser_button.button_group
+	elif fill_button.button_group:
+		tool_button_group = fill_button.button_group
 	else:
 		tool_button_group = ButtonGroup.new()
 	
 	brush_button.toggle_mode = true
 	eraser_button.toggle_mode = true
+	fill_button.toggle_mode = true
 	brush_button.button_group = tool_button_group
 	eraser_button.button_group = tool_button_group
+	fill_button.button_group = tool_button_group
 	_update_tool_buttons()
 
 func _update_tool_buttons():
-	if !brush_button or !eraser_button:
+	if !brush_button or !eraser_button or !fill_button:
 		return
 	
 	brush_button.button_pressed = current_tool == Tool.BRUSH
 	eraser_button.button_pressed = current_tool == Tool.ERASER
+	fill_button.button_pressed = current_tool == Tool.FILL
 
 func _on_canvas_updated():
 	if show_navigator:
