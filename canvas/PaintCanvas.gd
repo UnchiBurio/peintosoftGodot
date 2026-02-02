@@ -407,6 +407,48 @@ func commit_rect(rect: Rect2, color: Color, filled: bool = false, width: float =
 	
 	queue_redraw()
 
+func fill_at(position: Vector2, color: Color) -> void:
+	if not _is_position_in_canvas(position):
+		return
+	var start = Vector2i(floor(position.x), floor(position.y))
+	var target_color = _get_color_at_canvas_pos(start)
+	if _colors_match(target_color, color):
+		return
+	var stack: Array[Vector2i] = [start]
+	var visited := {}
+	var modified_chunks := {}
+	
+	while stack.size() > 0:
+		var pos = stack.pop_back()
+		if pos.x < 0 or pos.y < 0 or pos.x >= int(canvas_size.x) or pos.y >= int(canvas_size.y):
+			continue
+		var key = "%d_%d" % [pos.x, pos.y]
+		if visited.has(key):
+			continue
+		visited[key] = true
+		
+		var current_color = _get_color_at_canvas_pos(pos)
+		if not _colors_match(current_color, target_color):
+			continue
+		
+		_set_color_at_canvas_pos(pos, color, modified_chunks)
+		
+		stack.append(pos + Vector2i(1, 0))
+		stack.append(pos + Vector2i(-1, 0))
+		stack.append(pos + Vector2i(0, 1))
+		stack.append(pos + Vector2i(0, -1))
+	
+	for chunk in modified_chunks.values():
+		chunk.mark_dirty()
+		canvas_draw._pending_updates[chunk.position] = chunk
+		canvas_draw.chunk_update_times[chunk.position] = Time.get_ticks_msec()
+		if not chunk in active_chunks:
+			active_chunks.append(chunk)
+	
+	canvas_draw.process_pending_updates(true)
+	queue_redraw()
+	emit_signal("canvas_updated")
+
 # チャンク内に塗りつぶし四角形を描画
 func _draw_filled_rect_in_chunk(chunk: CanvasChunk, rect: Rect2, color: Color) -> void:
 	# チャンクの有効範囲を定義
@@ -436,6 +478,30 @@ func _draw_rect_outline_in_chunk(chunk: CanvasChunk, rect: Rect2, color: Color, 
 	# 左辺
 	canvas_draw.draw_line_in_chunk_optimized(chunk, rect.position,
 		Vector2(rect.position.x, rect.end.y), color, width)
+
+func _colors_match(left: Color, right: Color) -> bool:
+	return left.is_equal_approx(right)
+
+func _get_color_at_canvas_pos(pos: Vector2i) -> Color:
+	if pos.x < 0 or pos.y < 0 or pos.x >= int(canvas_size.x) or pos.y >= int(canvas_size.y):
+		return Color.TRANSPARENT
+	var chunk_pos = _get_chunk_pos(Vector2(pos))
+	if not layers[canvas_layer.current_layer_index].chunks.has(chunk_pos):
+		return Color.TRANSPARENT
+	var chunk = layers[canvas_layer.current_layer_index].chunks[chunk_pos]
+	var local_pos = _get_local_pos(Vector2(pos))
+	return chunk.image.get_pixel(local_pos.x, local_pos.y)
+
+func _set_color_at_canvas_pos(pos: Vector2i, color: Color, modified_chunks: Dictionary) -> void:
+	var chunk_pos = _get_chunk_pos(Vector2(pos))
+	var chunk = _get_or_create_layer_chunk(canvas_layer.current_layer_index, chunk_pos)
+	if chunk == null:
+		return
+	if not modified_chunks.has(chunk_pos):
+		_record_chunk_state(chunk, canvas_layer.current_layer_index)
+		modified_chunks[chunk_pos] = chunk
+	var local_pos = _get_local_pos(Vector2(pos))
+	chunk.image.set_pixel(local_pos.x, local_pos.y, color)
 
 # プレビュー描画用のメソッド
 func draw_preview_rect(rect: Rect2, color: Color, filled: bool = false, width: float = 1.0) -> void:
@@ -841,4 +907,5 @@ func _get_or_create_layer_chunk(layer_index: int, chunk_pos: Vector2i) -> Canvas
 	var layer = layers[layer_index]
 	if not layer.chunks.has(chunk_pos):
 		layer.chunks[chunk_pos] = _get_or_create_chunk(chunk_pos, layer_index)
+		add_child(layer.chunks[chunk_pos].texture_rect)
 	return layer.chunks[chunk_pos]

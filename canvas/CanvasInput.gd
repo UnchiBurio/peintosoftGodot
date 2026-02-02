@@ -143,6 +143,13 @@ func handle_input(event):
 								if edge != Vector2.ZERO:
 									paint_canvas._start_resize(edge, event.position)
 							else:
+								if main.current_tool == Main.Tool.FILL:
+									if paint_canvas.is_valid_draw_position(local_pos):
+										paint_canvas.start_stroke_recording()
+										paint_canvas.fill_at(local_pos, _get_stroke_color_for_tool(main))
+										paint_canvas.finish_stroke_recording()
+									paint_canvas.get_viewport().set_input_as_handled()
+									return
 								if !paint_canvas.is_drawing:
 									paint_canvas.start_stroke_recording()
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
@@ -212,7 +219,7 @@ func handle_input(event):
 			paint_canvas.canvas_draw.clear_stroke_guide()
 
 func _get_stroke_color_for_tool(main: Main) -> Color:
-	return Main.stroke_color if main.current_tool == Main.Tool.BRUSH else Color.TRANSPARENT
+	return Color.TRANSPARENT if main.current_tool == Main.Tool.ERASER else Main.stroke_color
 
 func _check_grid_intersection(from: Vector2, to: Vector2):
 	if not paint_canvas._is_position_in_canvas(from) or not paint_canvas._is_position_in_canvas(to):
