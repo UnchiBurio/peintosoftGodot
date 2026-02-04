@@ -5,6 +5,8 @@ class_name Main
 @onready var file_menu=$VBoxContainer/MenuBar/File
 @onready var edit_menu=$VBoxContainer/MenuBar/Edit
 @onready var color_picker=$ColorPickerButton
+@onready var brush_size_slider: HSlider = $BrushSizeRow/BrushSizeSlider
+@onready var brush_size_spinbox: SpinBox = $BrushSizeRow/BrushSizeSpinBox
 @onready var navigator_viewport: SubViewport = $NavigatorViewport
 @onready var navigator_texture_rect: TextureRect = $NavigatorTextureRect
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
@@ -16,11 +18,17 @@ class_name Main
 @onready var crosshair_primary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker
 @onready var crosshair_secondary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker
 @onready var crosshair_alpha_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSlider
+@onready var crosshair_alpha_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSpinBox
 @onready var crosshair_length_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSlider
+@onready var crosshair_length_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSpinBox
 @onready var crosshair_thickness_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSlider
+@onready var crosshair_thickness_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSpinBox
 @onready var crosshair_min_movement_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSlider
+@onready var crosshair_min_movement_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSpinBox
 @onready var crosshair_smoothing_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSlider
+@onready var crosshair_smoothing_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSpinBox
 @onready var crosshair_trail_interval_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSlider
+@onready var crosshair_trail_interval_spinbox: SpinBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSpinBox
 @onready var crosshair_trail_persist_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailPersistCheckBox
 @onready var crosshair_trail_clear_button: Button = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailClearButton
 
@@ -73,15 +81,16 @@ func _ready():
 	
 	# 初期カラーを設定
 	color_picker.color = stroke_color
+	_set_brush_size(stroke_width)
 	crosshair_primary_color_picker.color = directional_crosshair_primary_color
 	crosshair_secondary_color_picker.color = directional_crosshair_secondary_color
 	crosshair_enabled_checkbox.button_pressed = directional_crosshair_enabled
-	crosshair_alpha_slider.value = directional_crosshair_alpha
-	crosshair_length_slider.value = directional_crosshair_length
-	crosshair_thickness_slider.value = directional_crosshair_thickness
-	crosshair_min_movement_slider.value = directional_crosshair_min_movement
-	crosshair_smoothing_slider.value = directional_crosshair_smoothing
-	crosshair_trail_interval_slider.value = directional_crosshair_trail_interval
+	_sync_crosshair_alpha(directional_crosshair_alpha)
+	_sync_crosshair_length(directional_crosshair_length)
+	_sync_crosshair_thickness(directional_crosshair_thickness)
+	_sync_crosshair_min_movement(directional_crosshair_min_movement)
+	_sync_crosshair_smoothing(directional_crosshair_smoothing)
+	_sync_crosshair_trail_interval(directional_crosshair_trail_interval)
 	crosshair_trail_persist_checkbox.button_pressed = directional_crosshair_trail_persist
 	
 	# ナビゲーター用のViewportTextureを設定
@@ -253,8 +262,15 @@ func _on_color_picker_color_changed(color):
 	stroke_color = color
 	_update_tool_cursor()
 
-func _on_h_slider_value_changed(value):
+func _on_brush_size_value_changed(value: float) -> void:
+	_set_brush_size(value)
+
+func _set_brush_size(value: float) -> void:
 	stroke_width = value
+	if brush_size_slider and brush_size_slider.value != value:
+		brush_size_slider.value = value
+	if brush_size_spinbox and brush_size_spinbox.value != value:
+		brush_size_spinbox.value = value
 	_update_tool_cursor()
 
 func _on_brush_button_pressed():
@@ -346,6 +362,12 @@ func _build_tool_cursor_texture() -> ImageTexture:
 				image.set_pixel(x, y, color)
 	var texture = ImageTexture.create_from_image(image)
 	return texture
+
+func set_cursor_over_active_canvas(is_over: bool = true) -> void:
+	if not is_over:
+		Input.set_custom_mouse_cursor(null)
+		return
+	_update_tool_cursor()
 
 func _on_canvas_updated():
 	if show_navigator:
@@ -494,7 +516,48 @@ func _apply_directional_crosshair_settings(canvas: Node2D) -> void:
 	canvas.directional_crosshair_smoothing = directional_crosshair_smoothing
 	canvas.directional_crosshair_trail_interval = directional_crosshair_trail_interval
 	canvas.directional_crosshair_trail_persist = directional_crosshair_trail_persist
-	canvas.queue_redraw()
+
+func _sync_crosshair_alpha(value: float) -> void:
+	directional_crosshair_alpha = value
+	if crosshair_alpha_slider and crosshair_alpha_slider.value != value:
+		crosshair_alpha_slider.value = value
+	if crosshair_alpha_spinbox and crosshair_alpha_spinbox.value != value:
+		crosshair_alpha_spinbox.value = value
+
+func _sync_crosshair_length(value: float) -> void:
+	directional_crosshair_length = value
+	if crosshair_length_slider and crosshair_length_slider.value != value:
+		crosshair_length_slider.value = value
+	if crosshair_length_spinbox and crosshair_length_spinbox.value != value:
+		crosshair_length_spinbox.value = value
+
+func _sync_crosshair_thickness(value: float) -> void:
+	directional_crosshair_thickness = value
+	if crosshair_thickness_slider and crosshair_thickness_slider.value != value:
+		crosshair_thickness_slider.value = value
+	if crosshair_thickness_spinbox and crosshair_thickness_spinbox.value != value:
+		crosshair_thickness_spinbox.value = value
+
+func _sync_crosshair_min_movement(value: float) -> void:
+	directional_crosshair_min_movement = value
+	if crosshair_min_movement_slider and crosshair_min_movement_slider.value != value:
+		crosshair_min_movement_slider.value = value
+	if crosshair_min_movement_spinbox and crosshair_min_movement_spinbox.value != value:
+		crosshair_min_movement_spinbox.value = value
+
+func _sync_crosshair_smoothing(value: float) -> void:
+	directional_crosshair_smoothing = value
+	if crosshair_smoothing_slider and crosshair_smoothing_slider.value != value:
+		crosshair_smoothing_slider.value = value
+	if crosshair_smoothing_spinbox and crosshair_smoothing_spinbox.value != value:
+		crosshair_smoothing_spinbox.value = value
+
+func _sync_crosshair_trail_interval(value: float) -> void:
+	directional_crosshair_trail_interval = value
+	if crosshair_trail_interval_slider and crosshair_trail_interval_slider.value != value:
+		crosshair_trail_interval_slider.value = value
+	if crosshair_trail_interval_spinbox and crosshair_trail_interval_spinbox.value != value:
+		crosshair_trail_interval_spinbox.value = value
 
 func _on_crosshair_enabled_toggled(pressed: bool) -> void:
 	directional_crosshair_enabled = pressed
@@ -509,27 +572,27 @@ func _on_crosshair_secondary_color_changed(color: Color) -> void:
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_alpha_changed(value: float) -> void:
-	directional_crosshair_alpha = value
+	_sync_crosshair_alpha(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_length_changed(value: float) -> void:
-	directional_crosshair_length = value
+	_sync_crosshair_length(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_thickness_changed(value: float) -> void:
-	directional_crosshair_thickness = value
+	_sync_crosshair_thickness(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_min_movement_changed(value: float) -> void:
-	directional_crosshair_min_movement = value
+	_sync_crosshair_min_movement(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_smoothing_changed(value: float) -> void:
-	directional_crosshair_smoothing = value
+	_sync_crosshair_smoothing(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_trail_interval_changed(value: float) -> void:
-	directional_crosshair_trail_interval = value
+	_sync_crosshair_trail_interval(value)
 	_apply_directional_crosshair_settings(active_paint_canvas)
 
 func _on_crosshair_trail_persist_toggled(pressed: bool) -> void:
