@@ -10,6 +10,7 @@ var border_color := Color.WHITE
 var border_width := 2.0
 var resize_handle_size := 12.0
 var min_size := Vector2(20, 20)
+var drag_start_mouse := Vector2.ZERO
 
 func _ready():
 	# マウス入力を受け付けるように設定
@@ -35,30 +36,34 @@ func _on_gui_input(event: InputEvent):
 					resize_start_size = size
 				else:
 					dragging = true
-					drag_start_position = get_global_mouse_position() - position
-			else:
-				# ドラッグ/リサイズ終了
-				dragging = false
-				resizing = false
-	
-	elif event is InputEventMouseMotion:
-		if resizing:
-			var mouse_delta = get_global_mouse_position() - resize_start_position
-			var new_size = resize_start_size + mouse_delta
-			var viewport_size = get_viewport_rect().size
-			var max_size = viewport_size - position
-			new_size.x = clamp(new_size.x, min_size.x, max_size.x)
-			new_size.y = clamp(new_size.y, min_size.y, max_size.y)
-			size = new_size
-			queue_redraw()
-		elif dragging:
-			# ドラッグ中の位置更新
-			position = get_global_mouse_position() - drag_start_position
-			
-			# 画面外に出ないように制限
-			var viewport_size = get_viewport_rect().size
-			position.x = clamp(position.x, 0, viewport_size.x - size.x)
-			position.y = clamp(position.y, 0, viewport_size.y - size.y)
+					drag_start_position = position
+					drag_start_mouse = get_global_mouse_position()
+
+func _input(event: InputEvent):
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and !event.pressed:
+		# ドラッグ/リサイズ終了（画面外リリースも拾う）
+		dragging = false
+		resizing = false
+
+func _process(_delta):
+	if resizing:
+		var mouse_delta = get_global_mouse_position() - resize_start_position
+		var new_size = resize_start_size + mouse_delta
+		var viewport_size = get_viewport_rect().size
+		var max_size = viewport_size - position
+		new_size.x = clamp(new_size.x, min_size.x, max_size.x)
+		new_size.y = clamp(new_size.y, min_size.y, max_size.y)
+		size = new_size
+		queue_redraw()
+	elif dragging:
+		# ドラッグ中の位置更新
+		var mouse_delta = get_global_mouse_position() - drag_start_mouse
+		position = drag_start_position + mouse_delta
+
+		# 画面外に出ないように制限
+		var viewport_size = get_viewport_rect().size
+		position.x = clamp(position.x, 0, viewport_size.x - size.x)
+		position.y = clamp(position.y, 0, viewport_size.y - size.y)
 
 func _is_on_resize_handle(local_pos: Vector2) -> bool:
 	return local_pos.x >= size.x - resize_handle_size and local_pos.y >= size.y - resize_handle_size
