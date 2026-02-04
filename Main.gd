@@ -363,6 +363,12 @@ func _build_tool_cursor_texture() -> ImageTexture:
 	var texture = ImageTexture.create_from_image(image)
 	return texture
 
+func set_cursor_over_active_canvas(is_over: bool = true) -> void:
+	if not is_over:
+		Input.set_custom_mouse_cursor(null)
+		return
+	_update_tool_cursor()
+
 func _on_canvas_updated():
 	if show_navigator:
 		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
