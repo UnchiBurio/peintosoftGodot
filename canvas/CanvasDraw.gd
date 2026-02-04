@@ -218,14 +218,44 @@ func draw():
 				connection.style.width
 			)
 	
-	_draw_tool_tip_indicator(main)
+	# キャンバスサイズに合わせた十字カーソルの描画
+	if paint_canvas.show_cursor_cross:
+		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
+			# カーソルの色を半透明に設定
+			var line_color = paint_canvas.cursor_color
+			line_color.a = paint_canvas.cursor_alpha
+			
+			# 縦線 - キャンバスの上端から下端まで
+			paint_canvas.draw_line(
+				Vector2(paint_canvas.last_input_position.x, 0),           # キャンバスの上端
+				Vector2(paint_canvas.last_input_position.x, paint_canvas.canvas_size.y),  # キャンバスの下端
+				line_color,
+				1.0
+			)
+			
+			# 横線 - キャンバスの左端から右端まで
+			paint_canvas.draw_line(
+				Vector2(0, paint_canvas.last_input_position.y),           # キャンバスの左端
+				Vector2(paint_canvas.canvas_size.x, paint_canvas.last_input_position.y),  # キャンバスの右端
+				line_color,
+				1.0
+			)
+	
+	# 回転クロスヘアの描画
+	if paint_canvas.show_directional_crosshair:
+		for mark in paint_canvas.directional_crosshair_trail_marks:
+			if paint_canvas._is_position_in_canvas(mark.position):
+				_draw_directional_crosshair_at(mark.position, mark.angle)
+		if paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
+			_draw_directional_crosshair_at(
+				paint_canvas.directional_crosshair_position,
+				paint_canvas.directional_crosshair_angle
+			)
 
 	_draw_tool_tip_indicator(main)
 
 func _draw_tool_tip_indicator(main: Main) -> void:
 	if main.active_paint_canvas != paint_canvas:
-		return
-	if not main.show_tool_tip_indicator:
 		return
 	if not paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
 		return
@@ -238,7 +268,6 @@ func _draw_tool_tip_indicator(main: Main) -> void:
 	if paint_canvas.get_parent() and paint_canvas.get_parent().has_method("get_current_zoom"):
 		zoom_scale = 1.0 / paint_canvas.get_parent().current_zoom
 	var outline_width = max(1.0, radius * 0.15) * zoom_scale
-	var outline_radius = max(radius - outline_width * 0.5, 0.5)
 	var fill_color: Color
 	var outline_color: Color
 	if main.current_tool == Main.Tool.ERASER:
@@ -251,7 +280,7 @@ func _draw_tool_tip_indicator(main: Main) -> void:
 		outline_color.a = 0.85
 
 	paint_canvas.draw_circle(center, radius, fill_color)
-	paint_canvas.draw_arc(center, outline_radius, 0.0, TAU, 64, outline_color, outline_width)
+	paint_canvas.draw_arc(center, radius, 0.0, TAU, 64, outline_color, outline_width)
 
 func _draw_directional_crosshair_at(center: Vector2, angle: float) -> void:
 	var cross_primary_color = paint_canvas.directional_crosshair_primary_color
