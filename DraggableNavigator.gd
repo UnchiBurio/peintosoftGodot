@@ -2,9 +2,14 @@
 extends TextureRect
 
 var dragging := false
+var resizing := false
 var drag_start_position := Vector2.ZERO
+var resize_start_size := Vector2.ZERO
+var resize_start_mouse := Vector2.ZERO
 var border_color := Color.WHITE
 var border_width := 2.0
+var resize_handle_size := 14.0
+var min_size := Vector2(120, 120)
 
 func _ready():
 	# マウス入力を受け付けるように設定
@@ -15,20 +20,40 @@ func _draw():
 	# 枠線を描画
 	var rect = Rect2(Vector2.ZERO, size)
 	draw_rect(rect, border_color, false, border_width)
+	# リサイズハンドルを描画
+	var handle_rect = Rect2(size - Vector2.ONE * resize_handle_size, Vector2.ONE * resize_handle_size)
+	draw_rect(handle_rect, border_color, true)
 
 func _on_gui_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				# ドラッグ開始
-				dragging = true
-				drag_start_position = get_global_mouse_position() - position
+				var local_pos = event.position
+				var handle_area = Rect2(size - Vector2.ONE * resize_handle_size, Vector2.ONE * resize_handle_size)
+				if handle_area.has_point(local_pos):
+					# リサイズ開始
+					resizing = true
+					resize_start_size = size
+					resize_start_mouse = get_global_mouse_position()
+				else:
+					# ドラッグ開始
+					dragging = true
+					drag_start_position = get_global_mouse_position() - position
 			else:
 				# ドラッグ終了
 				dragging = false
+				resizing = false
 	
 	elif event is InputEventMouseMotion:
-		if dragging:
+		if resizing:
+			var delta = get_global_mouse_position() - resize_start_mouse
+			var new_size = resize_start_size + delta
+			var viewport_size = get_viewport_rect().size
+			new_size.x = clamp(new_size.x, min_size.x, viewport_size.x - position.x)
+			new_size.y = clamp(new_size.y, min_size.y, viewport_size.y - position.y)
+			size = new_size
+			queue_redraw()
+		elif dragging:
 			# ドラッグ中の位置更新
 			position = get_global_mouse_position() - drag_start_position
 			
