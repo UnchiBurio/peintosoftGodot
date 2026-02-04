@@ -9,7 +9,7 @@ var resize_start_mouse := Vector2.ZERO
 var border_color := Color.WHITE
 var border_width := 2.0
 var resize_handle_size := 14.0
-var min_size := Vector2(120, 120)
+var min_size := Vector2(40, 40)
 
 func _ready():
 	# マウス入力を受け付けるように設定
@@ -49,8 +49,10 @@ func _on_gui_input(event: InputEvent):
 			var delta = get_global_mouse_position() - resize_start_mouse
 			var new_size = resize_start_size + delta
 			var viewport_size = get_viewport_rect().size
-			new_size.x = clamp(new_size.x, min_size.x, viewport_size.x - position.x)
-			new_size.y = clamp(new_size.y, min_size.y, viewport_size.y - position.y)
+			var max_size_x = max(min_size.x, viewport_size.x - position.x)
+			var max_size_y = max(min_size.y, viewport_size.y - position.y)
+			new_size.x = clamp(new_size.x, min_size.x, max_size_x)
+			new_size.y = clamp(new_size.y, min_size.y, max_size_y)
 			size = new_size
 			queue_redraw()
 		elif dragging:
