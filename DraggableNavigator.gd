@@ -34,7 +34,8 @@ func _on_gui_input(event: InputEvent):
 					# リサイズ開始
 					resizing = true
 					resize_start_size = size
-					resize_start_mouse = get_global_mouse_position()
+					dragging = false
+					resize_start_mouse = event.global_position
 				else:
 					# ドラッグ開始
 					dragging = true
@@ -46,7 +47,7 @@ func _on_gui_input(event: InputEvent):
 	
 	elif event is InputEventMouseMotion:
 		if resizing:
-			var delta = get_global_mouse_position() - resize_start_mouse
+			var delta = event.global_position - resize_start_mouse
 			var new_size = resize_start_size + delta
 			var viewport_size = get_viewport_rect().size
 			var max_size_x = max(min_size.x, viewport_size.x - position.x)
