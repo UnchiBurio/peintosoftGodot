@@ -16,11 +16,13 @@ class LayerData:
 	extends RefCounted
 	var name: String
 	var visible: bool
+	var opacity: float
 	var chunks: Dictionary
 
 	func _init(layer_name: String):
 		name = layer_name
 		visible = true
+		opacity = 1.0
 		chunks = {}
 	
 	func values():
@@ -667,6 +669,7 @@ func _get_or_create_chunk(pos: Vector2i, layer_index: int) -> CanvasChunk:
 	else:
 		chunk = CanvasChunk.new(pos, CHUNK_SIZE)
 	chunk.texture_rect.z_index = layer_index
+	chunk.texture_rect.modulate = Color(1.0, 1.0, 1.0, layers[layer_index].opacity)
 	return chunk
 
 # 削除ボタンが押されたときの処理
@@ -776,6 +779,19 @@ func set_layer_visibility(index: int, visible: bool) -> void:
 	emit_signal("canvas_updated")
 	emit_signal("layer_structure_changed")
 
+func set_layer_opacity(index: int, opacity: float) -> void:
+	if index < 0 or index >= layers.size():
+		return
+	var clamped_opacity = clamp(opacity, 0.0, 1.0)
+	layers[index].opacity = clamped_opacity
+	for chunk in layers[index].chunks.values():
+		var modulate_color = chunk.texture_rect.modulate
+		modulate_color.a = clamped_opacity
+		chunk.texture_rect.modulate = modulate_color
+	queue_redraw()
+	emit_signal("canvas_updated")
+	emit_signal("layer_structure_changed")
+
 func move_layer(from_index: int, to_index: int) -> void:
 	if from_index == to_index or from_index < 0 or to_index < 0:
 		return
@@ -809,6 +825,7 @@ func _refresh_layer_z_indices() -> void:
 		for chunk in layer.chunks.values():
 			chunk.texture_rect.z_index = i
 			chunk.texture_rect.visible = layer.visible
+			chunk.texture_rect.modulate = Color(1.0, 1.0, 1.0, layer.opacity)
 
 # 新しい保存機能の実装
 func _on_save_button_pressed() -> void:
@@ -834,7 +851,19 @@ func _create_canvas_image() -> Image:
 			var src_rect = Rect2i(0, 0, CHUNK_SIZE, CHUNK_SIZE)
 			
 			# チャンクの内容をメイン画像にブレンド
-			image.blend_rect(chunk.image, src_rect, dst_pos)
+			if layer.opacity >= 0.999:
+				image.blend_rect(chunk.image, src_rect, dst_pos)
+			else:
+				var temp_image = chunk.image.duplicate()
+				temp_image.lock()
+				for y in range(temp_image.get_height()):
+					for x in range(temp_image.get_width()):
+						var pixel = temp_image.get_pixel(x, y)
+						if pixel.a > 0.0:
+							pixel.a *= layer.opacity
+							temp_image.set_pixel(x, y, pixel)
+				temp_image.unlock()
+				image.blend_rect(temp_image, src_rect, dst_pos)
 	
 	return image
 

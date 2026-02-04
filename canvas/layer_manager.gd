@@ -5,6 +5,8 @@ extends Window
 @onready var delete_button: Button = $Panel/VBoxContainer/HBoxContainer/DeleteButton
 @onready var name_edit: LineEdit = $Panel/VBoxContainer/NameEdit
 @onready var visibility_toggle: CheckBox = $Panel/VBoxContainer/VisibilityToggle
+@onready var opacity_slider: HSlider = $Panel/VBoxContainer/OpacityRow/OpacitySlider
+@onready var opacity_value_label: Label = $Panel/VBoxContainer/OpacityRow/OpacityValue
 
 var current_canvas: Node2D = null
 var drag_start_index := -1
@@ -28,6 +30,7 @@ func _ready():
 	name_edit.text_changed.connect(_on_name_changed)
 	name_edit.focus_exited.connect(func(): _on_name_submitted(name_edit.text))
 	visibility_toggle.toggled.connect(_on_visibility_toggled)
+	opacity_slider.value_changed.connect(_on_opacity_changed)
 	_setup_inline_editor()
 	
 	# 初期状態
@@ -84,6 +87,8 @@ func _clear_ui():
 	name_edit.text = ""
 	visibility_toggle.disabled = true
 	visibility_toggle.button_pressed = false
+	opacity_slider.value = 1.0
+	opacity_value_label.text = "100%"
 
 func _refresh_list():
 	print("LayerManager: Refreshing list...") # デバッグ用
@@ -116,6 +121,8 @@ func _update_selection(index: int):
 		name_edit.text = current_canvas.layers[index].name
 		visibility_toggle.disabled = false
 		visibility_toggle.set_pressed_no_signal(current_canvas.layers[index].visible)
+		opacity_slider.value = current_canvas.layers[index].opacity
+		opacity_value_label.text = "%d%%" % int(round(current_canvas.layers[index].opacity * 100.0))
 		_is_updating_ui = false
 	else:
 		name_edit.editable = false
@@ -167,6 +174,17 @@ func _on_visibility_toggled(toggled_on: bool):
 	current_canvas.set_layer_visibility(index, toggled_on)
 	_refresh_list()
 	_update_selection(index)
+
+func _on_opacity_changed(value: float):
+	if _is_updating_ui:
+		return
+	if not current_canvas:
+		return
+	var index = _get_selected_index()
+	if index == -1:
+		return
+	current_canvas.set_layer_opacity(index, value)
+	opacity_value_label.text = "%d%%" % int(round(value * 100.0))
 
 func _on_layer_list_gui_input(event: InputEvent):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
