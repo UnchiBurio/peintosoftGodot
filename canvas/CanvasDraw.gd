@@ -257,6 +257,8 @@ func draw():
 func _draw_tool_tip_indicator(main: Main) -> void:
 	if main.active_paint_canvas != paint_canvas:
 		return
+	if not main.show_tool_tip_indicator:
+		return
 	if not paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
 		return
 	if main.current_tool != Main.Tool.BRUSH and main.current_tool != Main.Tool.ERASER:

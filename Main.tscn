@@ -133,6 +133,10 @@ toggle_mode = true
 button_group = SubResource("ButtonGroup_blarn")
 text = "塗りつぶし"
 
+[node name="TipVisibilityCheckBox" type="CheckBox" parent="ToolWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "ペン先を表示"
+
 [node name="NavigatorViewport" type="SubViewport" parent="."]
 size = Vector2i(200, 200)
 render_target_update_mode = 4
@@ -306,6 +310,7 @@ text = "残りを削除"
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/BrushButton" to="." method="_on_brush_button_pressed"]
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/EraserButton" to="." method="_on_eraser_button_pressed"]
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/FillButton" to="." method="_on_fill_button_pressed"]
+[connection signal="toggled" from="ToolWindow/MarginContainer/VBoxContainer/TipVisibilityCheckBox" to="." method="_on_tip_visibility_toggled"]
 [connection signal="color_changed" from="ColorPickerButton" to="." method="_on_color_picker_color_changed"]
 [connection signal="value_changed" from="HSlider" to="." method="_on_h_slider_value_changed"]
 [connection signal="toggled" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox" to="." method="_on_crosshair_enabled_toggled"]

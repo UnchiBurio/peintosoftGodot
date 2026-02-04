@@ -11,6 +11,7 @@ class_name Main
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 @onready var fill_button: Button = $ToolWindow/MarginContainer/VBoxContainer/FillButton
+@onready var tip_visibility_checkbox: CheckBox = $ToolWindow/MarginContainer/VBoxContainer/TipVisibilityCheckBox
 @onready var crosshair_enabled_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox
 @onready var crosshair_primary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker
 @onready var crosshair_secondary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker
@@ -35,6 +36,7 @@ var canvas_counter := 0  # 新規キャンバスの連番用
 enum Tool {BRUSH, ERASER, FILL}
 var current_tool = Tool.BRUSH
 var tool_button_group: ButtonGroup
+var show_tool_tip_indicator: bool = true
 
 # ツールパラメータ
 static var stroke_color = Color.BLACK
@@ -103,6 +105,7 @@ func _ready():
 		layer_btn.pressed.connect(func(): layer_manager.show())
 	
 	_setup_tool_buttons()
+	_setup_tip_visibility_checkbox()
 
 
 func _on_navigator_draw():
@@ -285,6 +288,11 @@ func _setup_tool_buttons():
 	fill_button.button_group = tool_button_group
 	_update_tool_buttons()
 
+func _setup_tip_visibility_checkbox():
+	if !tip_visibility_checkbox:
+		return
+	tip_visibility_checkbox.button_pressed = show_tool_tip_indicator
+
 func _update_tool_buttons():
 	if !brush_button or !eraser_button or !fill_button:
 		return
@@ -292,6 +300,11 @@ func _update_tool_buttons():
 	brush_button.button_pressed = current_tool == Tool.BRUSH
 	eraser_button.button_pressed = current_tool == Tool.ERASER
 	fill_button.button_pressed = current_tool == Tool.FILL
+
+func _on_tip_visibility_toggled(pressed: bool) -> void:
+	show_tool_tip_indicator = pressed
+	if active_paint_canvas:
+		active_paint_canvas.queue_redraw()
 
 func _on_canvas_updated():
 	if show_navigator:
