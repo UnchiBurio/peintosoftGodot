@@ -220,6 +220,8 @@ func draw():
 	
 	_draw_tool_tip_indicator(main)
 
+	_draw_tool_tip_indicator(main)
+
 func _draw_tool_tip_indicator(main: Main) -> void:
 	if main.active_paint_canvas != paint_canvas:
 		return
@@ -236,6 +238,7 @@ func _draw_tool_tip_indicator(main: Main) -> void:
 	if paint_canvas.get_parent() and paint_canvas.get_parent().has_method("get_current_zoom"):
 		zoom_scale = 1.0 / paint_canvas.get_parent().current_zoom
 	var outline_width = max(1.0, radius * 0.15) * zoom_scale
+	var outline_radius = max(radius - outline_width * 0.5, 0.5)
 	var fill_color: Color
 	var outline_color: Color
 	if main.current_tool == Main.Tool.ERASER:
@@ -248,7 +251,29 @@ func _draw_tool_tip_indicator(main: Main) -> void:
 		outline_color.a = 0.85
 
 	paint_canvas.draw_circle(center, radius, fill_color)
-	paint_canvas.draw_arc(center, radius, 0.0, TAU, 64, outline_color, outline_width)
+	paint_canvas.draw_arc(center, outline_radius, 0.0, TAU, 64, outline_color, outline_width)
+
+func _draw_directional_crosshair_at(center: Vector2, angle: float) -> void:
+	var cross_primary_color = paint_canvas.directional_crosshair_primary_color
+	var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color
+	cross_primary_color.a = paint_canvas.directional_crosshair_alpha
+	cross_secondary_color.a = paint_canvas.directional_crosshair_alpha
+	var half_length = paint_canvas.directional_crosshair_length * 0.5
+	var thickness = paint_canvas.directional_crosshair_thickness
+	var direction = Vector2(cos(angle), sin(angle))
+	var perpendicular = direction.rotated(PI / 2.0)
+	paint_canvas.draw_line(
+		center - direction * half_length,
+		center + direction * half_length,
+		cross_primary_color,
+		thickness
+	)
+	paint_canvas.draw_line(
+		center - perpendicular * half_length,
+		center + perpendicular * half_length,
+		cross_secondary_color,
+		thickness
+	)
 
 func _draw_grid():
 	var size = paint_canvas.canvas_size

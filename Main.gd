@@ -37,6 +37,7 @@ enum Tool {BRUSH, ERASER, FILL}
 var current_tool = Tool.BRUSH
 var tool_button_group: ButtonGroup
 var show_tool_tip_indicator: bool = true
+var is_cursor_over_active_canvas: bool = false
 
 # ツールパラメータ
 static var stroke_color = Color.BLACK
@@ -311,8 +312,17 @@ func _on_tip_visibility_toggled(pressed: bool) -> void:
 		active_paint_canvas.queue_redraw()
 	_update_tool_cursor()
 
+func set_cursor_over_active_canvas(is_over: bool) -> void:
+	if is_cursor_over_active_canvas == is_over:
+		return
+	is_cursor_over_active_canvas = is_over
+	_update_tool_cursor()
+
 func _update_tool_cursor() -> void:
 	if !show_tool_tip_indicator or (current_tool != Tool.BRUSH and current_tool != Tool.ERASER):
+		Input.set_custom_mouse_cursor(null)
+		return
+	if not is_cursor_over_active_canvas:
 		Input.set_custom_mouse_cursor(null)
 		return
 	var cursor_texture = _build_tool_cursor_texture()
@@ -341,7 +351,7 @@ func _build_tool_cursor_texture() -> ImageTexture:
 			var dist = pos.distance_to(center)
 			if dist <= radius:
 				var color = fill_color
-				if abs(dist - radius) <= outline_thickness:
+				if dist >= radius - outline_thickness:
 					color = outline_color
 				image.set_pixel(x, y, color)
 	var texture = ImageTexture.create_from_image(image)
