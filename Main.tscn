@@ -79,12 +79,22 @@ offset_left = 128.0
 offset_right = 194.0
 offset_bottom = 31.0
 
-[node name="HSlider" type="HSlider" parent="."]
+[node name="BrushSizeRow" type="HBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 202.0
 offset_top = 7.0
-offset_right = 435.0
-offset_bottom = 23.0
+offset_right = 520.0
+offset_bottom = 27.0
+theme_override_constants/separation = 6
+
+[node name="BrushSizeSlider" type="HSlider" parent="BrushSizeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BrushSizeSpinBox" type="SpinBox" parent="BrushSizeRow"]
+layout_mode = 2
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(64, 0)
 
 [node name="ToolWindow" type="PanelContainer" parent="."]
 layout_mode = 0
@@ -219,6 +229,14 @@ max_value = 1.0
 step = 0.05
 value = 0.6
 
+[node name="CrosshairAlphaSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.6
+
 [node name="CrosshairLengthRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -230,6 +248,14 @@ text = "長さ"
 [node name="CrosshairLengthSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+min_value = 4.0
+max_value = 64.0
+step = 1.0
+value = 18.0
+
+[node name="CrosshairLengthSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
 min_value = 4.0
 max_value = 64.0
 step = 1.0
@@ -251,6 +277,14 @@ max_value = 8.0
 step = 0.5
 value = 1.0
 
+[node name="CrosshairThicknessSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
+min_value = 1.0
+max_value = 8.0
+step = 0.5
+value = 1.0
+
 [node name="CrosshairMinMovementRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -262,6 +296,14 @@ text = "移動しきい値"
 [node name="CrosshairMinMovementSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+min_value = 0.0
+max_value = 20.0
+step = 0.5
+value = 2.0
+
+[node name="CrosshairMinMovementSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
 min_value = 0.0
 max_value = 20.0
 step = 0.5
@@ -283,6 +325,14 @@ max_value = 1.0
 step = 0.05
 value = 0.2
 
+[node name="CrosshairSmoothingSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
+min_value = 0.0
+max_value = 1.0
+step = 0.05
+value = 0.2
+
 [node name="CrosshairTrailIntervalRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -294,6 +344,14 @@ text = "間隔"
 [node name="CrosshairTrailIntervalSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+min_value = 4.0
+max_value = 128.0
+step = 1.0
+value = 20.0
+
+[node name="CrosshairTrailIntervalSpinBox" type="SpinBox" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
 min_value = 4.0
 max_value = 128.0
 step = 1.0
@@ -312,15 +370,22 @@ text = "残りを削除"
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/FillButton" to="." method="_on_fill_button_pressed"]
 [connection signal="toggled" from="ToolWindow/MarginContainer/VBoxContainer/TipVisibilityCheckBox" to="." method="_on_tip_visibility_toggled"]
 [connection signal="color_changed" from="ColorPickerButton" to="." method="_on_color_picker_color_changed"]
-[connection signal="value_changed" from="HSlider" to="." method="_on_h_slider_value_changed"]
+[connection signal="value_changed" from="BrushSizeRow/BrushSizeSlider" to="." method="_on_brush_size_value_changed"]
+[connection signal="value_changed" from="BrushSizeRow/BrushSizeSpinBox" to="." method="_on_brush_size_value_changed"]
 [connection signal="toggled" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox" to="." method="_on_crosshair_enabled_toggled"]
 [connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker" to="." method="_on_crosshair_primary_color_changed"]
 [connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker" to="." method="_on_crosshair_secondary_color_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSlider" to="." method="_on_crosshair_alpha_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow/CrosshairAlphaSpinBox" to="." method="_on_crosshair_alpha_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSlider" to="." method="_on_crosshair_length_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow/CrosshairLengthSpinBox" to="." method="_on_crosshair_length_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSlider" to="." method="_on_crosshair_thickness_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow/CrosshairThicknessSpinBox" to="." method="_on_crosshair_thickness_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSlider" to="." method="_on_crosshair_min_movement_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow/CrosshairMinMovementSpinBox" to="." method="_on_crosshair_min_movement_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSlider" to="." method="_on_crosshair_smoothing_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow/CrosshairSmoothingSpinBox" to="." method="_on_crosshair_smoothing_changed"]
 [connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSlider" to="." method="_on_crosshair_trail_interval_changed"]
+[connection signal="value_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSpinBox" to="." method="_on_crosshair_trail_interval_changed"]
 [connection signal="toggled" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailPersistCheckBox" to="." method="_on_crosshair_trail_persist_toggled"]
 [connection signal="pressed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailClearButton" to="." method="_on_crosshair_trail_clear_pressed"]
