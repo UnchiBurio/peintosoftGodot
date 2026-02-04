@@ -15,6 +15,8 @@ var drag_start_mouse := Vector2.ZERO
 func _ready():
 	# マウス入力を受け付けるように設定
 	mouse_filter = Control.MOUSE_FILTER_PASS
+	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stretch_mode = TextureRect.STRETCH_SCALE
 	gui_input.connect(_on_gui_input)
 
 func _draw():
