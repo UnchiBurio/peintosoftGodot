@@ -102,7 +102,6 @@ var canvas_resize: CanvasResize
 var canvas_move: CanvasMove
 var canvas_layer: PaintCanvasLayer
 var canvas_preview: CanvasPreview
-var crosshair_overlay: CrosshairOverlay
 
 # 点の性質を表す列挙型
 enum PointProperty {
@@ -174,12 +173,7 @@ func _ready():
 	for layer in layers:
 		for chunk in layer.chunks.values():
 			add_child(chunk.texture_rect)
-
-	crosshair_overlay = CrosshairOverlay.new(self)
-	crosshair_overlay.name = "CrosshairOverlay"
-	crosshair_overlay.z_index = layers.size() + 1
-	add_child(crosshair_overlay)
-	
+			
 	# シグナルの接続
 	if !solo:
 		canvas_updated.connect(func(): get_tree().root.get_node("Main")._on_canvas_updated())
@@ -203,8 +197,6 @@ func _update_chunk_constants():
 
 func _draw():
 	canvas_draw.draw()
-	if crosshair_overlay:
-		crosshair_overlay.queue_redraw()
 
 func start_crosshair_trail(position: Vector2) -> void:
 	directional_crosshair_trail_last_position = position
@@ -817,8 +809,6 @@ func _refresh_layer_z_indices() -> void:
 		for chunk in layer.chunks.values():
 			chunk.texture_rect.z_index = i
 			chunk.texture_rect.visible = layer.visible
-	if crosshair_overlay:
-		crosshair_overlay.z_index = layers.size() + 1
 
 # 新しい保存機能の実装
 func _on_save_button_pressed() -> void:
