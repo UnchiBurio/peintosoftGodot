@@ -218,39 +218,7 @@ func draw():
 				connection.style.width
 			)
 	
-	# キャンバスサイズに合わせた十字カーソルの描画
-	if paint_canvas.show_cursor_cross:
-		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
-			# カーソルの色を半透明に設定
-			var line_color = paint_canvas.cursor_color
-			line_color.a = paint_canvas.cursor_alpha
-			
-			# 縦線 - キャンバスの上端から下端まで
-			paint_canvas.draw_line(
-				Vector2(paint_canvas.last_input_position.x, 0),           # キャンバスの上端
-				Vector2(paint_canvas.last_input_position.x, paint_canvas.canvas_size.y),  # キャンバスの下端
-				line_color,
-				1.0
-			)
-			
-			# 横線 - キャンバスの左端から右端まで
-			paint_canvas.draw_line(
-				Vector2(0, paint_canvas.last_input_position.y),           # キャンバスの左端
-				Vector2(paint_canvas.canvas_size.x, paint_canvas.last_input_position.y),  # キャンバスの右端
-				line_color,
-				1.0
-			)
-	
-	# 回転クロスヘアの描画
-	if paint_canvas.show_directional_crosshair:
-		for mark in paint_canvas.directional_crosshair_trail_marks:
-			if paint_canvas._is_position_in_canvas(mark.position):
-				_draw_directional_crosshair_at(mark.position, mark.angle)
-		if paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
-			_draw_directional_crosshair_at(
-				paint_canvas.directional_crosshair_position,
-				paint_canvas.directional_crosshair_angle
-			)
+	_draw_tool_tip_indicator(main)
 
 	_draw_tool_tip_indicator(main)
 
