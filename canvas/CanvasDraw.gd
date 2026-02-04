@@ -252,6 +252,39 @@ func draw():
 				paint_canvas.directional_crosshair_angle
 			)
 
+	_draw_tool_tip_indicator(main)
+
+func _draw_tool_tip_indicator(main: Main) -> void:
+	if main.active_paint_canvas != paint_canvas:
+		return
+	if not main.show_tool_tip_indicator:
+		return
+	if not paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
+		return
+	if main.current_tool != Main.Tool.BRUSH and main.current_tool != Main.Tool.ERASER:
+		return
+
+	var radius = max(Main.stroke_width * 0.5, 0.5)
+	var center = paint_canvas.last_input_position
+	var zoom_scale = 1.0
+	if paint_canvas.get_parent() and paint_canvas.get_parent().has_method("get_current_zoom"):
+		zoom_scale = 1.0 / paint_canvas.get_parent().current_zoom
+	var outline_width = max(1.0, radius * 0.15) * zoom_scale
+	var outline_radius = max(radius - outline_width * 0.5, 0.5)
+	var fill_color: Color
+	var outline_color: Color
+	if main.current_tool == Main.Tool.ERASER:
+		fill_color = Color(1, 1, 1, 0.15)
+		outline_color = Color(0, 0, 0, 0.7)
+	else:
+		fill_color = Main.stroke_color
+		fill_color.a = 0.2
+		outline_color = Main.stroke_color
+		outline_color.a = 0.85
+
+	paint_canvas.draw_circle(center, radius, fill_color)
+	paint_canvas.draw_arc(center, outline_radius, 0.0, TAU, 64, outline_color, outline_width)
+
 func _draw_directional_crosshair_at(center: Vector2, angle: float) -> void:
 	var cross_primary_color = paint_canvas.directional_crosshair_primary_color
 	var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color

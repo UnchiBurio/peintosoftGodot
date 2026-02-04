@@ -24,6 +24,8 @@ func handle_input(event):
 	if event is InputEventMouseMotion or event is InputEventScreenDrag:
 		var new_position = paint_canvas.to_local(event.position)
 		var movement_delta = new_position - last_input_position
+		if paint_canvas == main.active_paint_canvas:
+			main.set_cursor_over_active_canvas(paint_canvas._is_position_in_canvas(new_position))
 		
 		# グリッドハイライトが有効な場合は交点チェック
 		if paint_canvas.show_grid and paint_canvas.show_grid_highlight:

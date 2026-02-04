@@ -11,6 +11,7 @@ class_name Main
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 @onready var fill_button: Button = $ToolWindow/MarginContainer/VBoxContainer/FillButton
+@onready var tip_visibility_checkbox: CheckBox = $ToolWindow/MarginContainer/VBoxContainer/TipVisibilityCheckBox
 @onready var crosshair_enabled_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox
 @onready var crosshair_primary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker
 @onready var crosshair_secondary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker
@@ -35,6 +36,8 @@ var canvas_counter := 0  # 新規キャンバスの連番用
 enum Tool {BRUSH, ERASER, FILL}
 var current_tool = Tool.BRUSH
 var tool_button_group: ButtonGroup
+var show_tool_tip_indicator: bool = true
+var is_cursor_over_active_canvas: bool = false
 
 # ツールパラメータ
 static var stroke_color = Color.BLACK
@@ -103,6 +106,8 @@ func _ready():
 		layer_btn.pressed.connect(func(): layer_manager.show())
 	
 	_setup_tool_buttons()
+	_setup_tip_visibility_checkbox()
+	_update_tool_cursor()
 
 
 func _on_navigator_draw():
@@ -247,9 +252,11 @@ func _on_edit_menu_pressed(id: int):
 
 func _on_color_picker_color_changed(color):
 	stroke_color = color
+	_update_tool_cursor()
 
 func _on_h_slider_value_changed(value):
 	stroke_width = value
+	_update_tool_cursor()
 
 func _on_brush_button_pressed():
 	_set_tool(Tool.BRUSH)
@@ -263,6 +270,7 @@ func _on_fill_button_pressed():
 func _set_tool(tool: Tool):
 	current_tool = tool
 	_update_tool_buttons()
+	_update_tool_cursor()
 
 func _setup_tool_buttons():
 	if !brush_button or !eraser_button or !fill_button:
@@ -285,6 +293,11 @@ func _setup_tool_buttons():
 	fill_button.button_group = tool_button_group
 	_update_tool_buttons()
 
+func _setup_tip_visibility_checkbox():
+	if !tip_visibility_checkbox:
+		return
+	tip_visibility_checkbox.button_pressed = show_tool_tip_indicator
+
 func _update_tool_buttons():
 	if !brush_button or !eraser_button or !fill_button:
 		return
@@ -292,6 +305,57 @@ func _update_tool_buttons():
 	brush_button.button_pressed = current_tool == Tool.BRUSH
 	eraser_button.button_pressed = current_tool == Tool.ERASER
 	fill_button.button_pressed = current_tool == Tool.FILL
+
+func _on_tip_visibility_toggled(pressed: bool) -> void:
+	show_tool_tip_indicator = pressed
+	if active_paint_canvas:
+		active_paint_canvas.queue_redraw()
+	_update_tool_cursor()
+
+func set_cursor_over_active_canvas(is_over: bool) -> void:
+	if is_cursor_over_active_canvas == is_over:
+		return
+	is_cursor_over_active_canvas = is_over
+	_update_tool_cursor()
+
+func _update_tool_cursor() -> void:
+	if !show_tool_tip_indicator or (current_tool != Tool.BRUSH and current_tool != Tool.ERASER):
+		Input.set_custom_mouse_cursor(null)
+		return
+	if not is_cursor_over_active_canvas:
+		Input.set_custom_mouse_cursor(null)
+		return
+	var cursor_texture = _build_tool_cursor_texture()
+	if cursor_texture:
+		var radius = max(stroke_width * 0.5, 1.0)
+		var hotspot = Vector2(radius + 2.0, radius + 2.0)
+		Input.set_custom_mouse_cursor(cursor_texture, Input.CURSOR_ARROW, hotspot)
+	else:
+		Input.set_custom_mouse_cursor(null)
+
+func _build_tool_cursor_texture() -> ImageTexture:
+	var radius = max(stroke_width * 0.5, 1.0)
+	var padding = 2.0
+	var size = int(ceil((radius + padding) * 2.0))
+	var image = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	var center = Vector2(radius + padding, radius + padding)
+	var outline_color = Color(0, 0, 0, 0.7) if current_tool == Tool.ERASER else stroke_color
+	var fill_color = Color(1, 1, 1, 0.15) if current_tool == Tool.ERASER else stroke_color
+	fill_color.a = 0.2 if current_tool == Tool.BRUSH else fill_color.a
+	outline_color.a = 0.85 if current_tool == Tool.BRUSH else outline_color.a
+	var outline_thickness = max(1.0, radius * 0.15)
+	for y in range(size):
+		for x in range(size):
+			var pos = Vector2(x, y)
+			var dist = pos.distance_to(center)
+			if dist <= radius:
+				var color = fill_color
+				if dist >= radius - outline_thickness:
+					color = outline_color
+				image.set_pixel(x, y, color)
+	var texture = ImageTexture.create_from_image(image)
+	return texture
 
 func _on_canvas_updated():
 	if show_navigator:
