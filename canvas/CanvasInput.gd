@@ -217,8 +217,8 @@ func handle_input(event):
 			paint_canvas.show_directional_crosshair = not paint_canvas.show_directional_crosshair
 			paint_canvas.queue_redraw()
 		
-		# レイヤー追加（Lキー）
-		elif event.keycode == KEY_L:
+		# レイヤー追加（Ctrl+L）
+		elif event.keycode == KEY_L and event.ctrl_pressed:
 			paint_canvas._add_layer(str(paint_canvas.layers.size() - 1))
 		
 		# ストロークガイドのクリア（Ctrl+C）

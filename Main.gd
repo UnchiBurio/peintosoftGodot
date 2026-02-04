@@ -8,6 +8,8 @@ class_name Main
 @onready var navigator_viewport: SubViewport = $NavigatorViewport
 @onready var navigator_texture_rect: TextureRect = $NavigatorTextureRect
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
+@onready var tool_window: PanelContainer = $ToolWindow
+@onready var crosshair_window: PanelContainer = $CrosshairWindow
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 @onready var fill_button: Button = $ToolWindow/MarginContainer/VBoxContainer/FillButton
@@ -176,6 +178,21 @@ func toggle_navigator_flip_vertical():
 		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		navigator_viewport.get_child(0).queue_redraw()
 
+func toggle_tool_window():
+	if tool_window:
+		tool_window.visible = not tool_window.visible
+
+func toggle_crosshair_window():
+	if crosshair_window:
+		crosshair_window.visible = not crosshair_window.visible
+
+func toggle_layer_window():
+	if layer_manager:
+		if layer_manager.visible:
+			layer_manager.hide()
+		else:
+			layer_manager.show()
+
 # キー入力の処理を追加
 func _unhandled_input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -193,6 +210,12 @@ func _unhandled_input(event):
 				toggle_navigator()
 			KEY_V:
 				toggle_navigator_flip_vertical()
+			KEY_T:
+				toggle_tool_window()
+			KEY_C:
+				toggle_crosshair_window()
+			KEY_L:
+				toggle_layer_window()
 
 func _on_file_menu_pressed(id: int):
 	match id:
