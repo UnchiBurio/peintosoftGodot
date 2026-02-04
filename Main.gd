@@ -178,7 +178,16 @@ func toggle_navigator_flip_vertical():
 
 # キー入力の処理を追加
 func _unhandled_input(event):
-	if event is InputEventKey and event.pressed:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.ctrl_pressed:
+			match event.keycode:
+				KEY_Z:
+					if active_paint_canvas and active_paint_canvas.has_method("undo"):
+						active_paint_canvas.undo()
+				KEY_Y:
+					if active_paint_canvas and active_paint_canvas.has_method("redo"):
+						active_paint_canvas.redo()
+			return
 		match event.keycode:
 			KEY_N:
 				toggle_navigator()
