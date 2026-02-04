@@ -139,9 +139,12 @@ func _on_navigator_draw():
 			var chunk_preview_pos = preview_pos + chunk_pos
 			var chunk_size = Vector2.ONE * active_canvas.CHUNK_SIZE * navigator_scale
 			
-			draw_node.draw_texture_rect(chunk.texture, 
-									  Rect2(chunk_preview_pos, chunk_size), 
-									  false)
+			draw_node.draw_texture_rect(
+				chunk.texture,
+				Rect2(chunk_preview_pos, chunk_size),
+				false,
+				Color(1.0, 1.0, 1.0, layer.opacity)
+			)
 
 func _process(_delta):
 	# マウス位置の更新
