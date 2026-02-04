@@ -6,6 +6,7 @@ var resizing := false
 var drag_start_position := Vector2.ZERO
 var resize_start_position := Vector2.ZERO
 var resize_start_size := Vector2.ZERO
+var resize_min_size := Vector2.ZERO
 var border_color := Color.WHITE
 var border_width := 2.0
 var resize_handle_size := 12.0
@@ -33,6 +34,10 @@ func _on_gui_input(event: InputEvent):
 					resizing = true
 					resize_start_position = get_global_mouse_position()
 					resize_start_size = size
+					resize_min_size = Vector2(
+						min(min_size.x, resize_start_size.x),
+						min(min_size.y, resize_start_size.y)
+					)
 				else:
 					dragging = true
 					drag_start_position = get_global_mouse_position() - position
@@ -47,8 +52,8 @@ func _on_gui_input(event: InputEvent):
 			var new_size = resize_start_size + mouse_delta
 			var viewport_size = get_viewport_rect().size
 			var max_size = viewport_size - position
-			new_size.x = clamp(new_size.x, min_size.x, max_size.x)
-			new_size.y = clamp(new_size.y, min_size.y, max_size.y)
+			new_size.x = clamp(new_size.x, resize_min_size.x, max_size.x)
+			new_size.y = clamp(new_size.y, resize_min_size.y, max_size.y)
 			size = new_size
 			queue_redraw()
 		elif dragging:
