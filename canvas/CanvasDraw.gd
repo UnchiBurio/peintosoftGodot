@@ -218,40 +218,6 @@ func draw():
 				connection.style.width
 			)
 	
-	# キャンバスサイズに合わせた十字カーソルの描画
-	if paint_canvas.show_cursor_cross:
-		if paint_canvas._is_position_in_canvas(paint_canvas.last_input_position):
-			# カーソルの色を半透明に設定
-			var line_color = paint_canvas.cursor_color
-			line_color.a = paint_canvas.cursor_alpha
-			
-			# 縦線 - キャンバスの上端から下端まで
-			paint_canvas.draw_line(
-				Vector2(paint_canvas.last_input_position.x, 0),           # キャンバスの上端
-				Vector2(paint_canvas.last_input_position.x, paint_canvas.canvas_size.y),  # キャンバスの下端
-				line_color,
-				1.0
-			)
-			
-			# 横線 - キャンバスの左端から右端まで
-			paint_canvas.draw_line(
-				Vector2(0, paint_canvas.last_input_position.y),           # キャンバスの左端
-				Vector2(paint_canvas.canvas_size.x, paint_canvas.last_input_position.y),  # キャンバスの右端
-				line_color,
-				1.0
-			)
-	
-	# 回転クロスヘアの描画
-	if paint_canvas.show_directional_crosshair:
-		for mark in paint_canvas.directional_crosshair_trail_marks:
-			if paint_canvas._is_position_in_canvas(mark.position):
-				_draw_directional_crosshair_at(mark.position, mark.angle)
-		if paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(paint_canvas.directional_crosshair_position):
-			_draw_directional_crosshair_at(
-				paint_canvas.directional_crosshair_position,
-				paint_canvas.directional_crosshair_angle
-			)
-
 	_draw_tool_tip_indicator(main)
 
 func _draw_tool_tip_indicator(main: Main) -> void:
@@ -283,28 +249,6 @@ func _draw_tool_tip_indicator(main: Main) -> void:
 
 	paint_canvas.draw_circle(center, radius, fill_color)
 	paint_canvas.draw_arc(center, radius, 0.0, TAU, 64, outline_color, outline_width)
-
-func _draw_directional_crosshair_at(center: Vector2, angle: float) -> void:
-	var cross_primary_color = paint_canvas.directional_crosshair_primary_color
-	var cross_secondary_color = paint_canvas.directional_crosshair_secondary_color
-	cross_primary_color.a = paint_canvas.directional_crosshair_alpha
-	cross_secondary_color.a = paint_canvas.directional_crosshair_alpha
-	var half_length = paint_canvas.directional_crosshair_length * 0.5
-	var thickness = paint_canvas.directional_crosshair_thickness
-	var direction = Vector2(cos(angle), sin(angle))
-	var perpendicular = direction.rotated(PI / 2.0)
-	paint_canvas.draw_line(
-		center - direction * half_length,
-		center + direction * half_length,
-		cross_primary_color,
-		thickness
-	)
-	paint_canvas.draw_line(
-		center - perpendicular * half_length,
-		center + perpendicular * half_length,
-		cross_secondary_color,
-		thickness
-	)
 
 func _draw_grid():
 	var size = paint_canvas.canvas_size
