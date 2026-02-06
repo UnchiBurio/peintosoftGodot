@@ -76,6 +76,7 @@ var directional_crosshair_trail_persist: bool = false
 var directional_crosshair_trail_marks: Array = []
 var directional_crosshair_trail_distance: float = 0.0
 var directional_crosshair_trail_last_position: Vector2 = Vector2.ZERO
+var directional_crosshair_pending_vector: Vector2 = Vector2.ZERO
 
 class CrosshairTrailMark:
 	extends RefCounted
@@ -201,8 +202,26 @@ func _draw():
 	canvas_draw.draw()
 
 func start_crosshair_trail(position: Vector2) -> void:
+	directional_crosshair_position = position
+	directional_crosshair_pending_vector = Vector2.ZERO
 	directional_crosshair_trail_last_position = position
 	directional_crosshair_trail_distance = 0.0
+
+func update_directional_crosshair(new_position: Vector2, movement_delta: Vector2) -> void:
+	directional_crosshair_position = new_position
+	directional_crosshair_pending_vector += movement_delta
+	if directional_crosshair_pending_vector.length() < directional_crosshair_min_movement:
+		return
+
+	var target_direction = directional_crosshair_pending_vector.normalized()
+	var current_direction = Vector2.RIGHT.rotated(directional_crosshair_angle)
+	var smoothing = clampf(directional_crosshair_smoothing, 0.0, 1.0)
+	var blended_direction = current_direction.lerp(target_direction, smoothing)
+	if blended_direction.length_squared() <= 0.000001:
+		blended_direction = target_direction
+
+	directional_crosshair_angle = blended_direction.normalized().angle()
+	directional_crosshair_pending_vector = Vector2.ZERO
 
 func update_crosshair_trail(new_position: Vector2, angle: float) -> void:
 	if directional_crosshair_trail_interval <= 0.0:
