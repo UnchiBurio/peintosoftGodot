@@ -20,9 +20,11 @@ func handle_input(event):
 	if !paint_canvas.solo:
 		if paint_canvas != main.active_paint_canvas:
 			return
+	
+	var local_position := _get_event_local_position(event)
 		
 	if event is InputEventMouseMotion or event is InputEventScreenDrag:
-		var new_position = paint_canvas.to_local(event.position)
+		var new_position = local_position
 		var movement_delta = new_position - last_input_position
 		if paint_canvas == main.active_paint_canvas:
 			main.set_cursor_over_active_canvas(paint_canvas._is_position_in_canvas(new_position))
@@ -38,9 +40,9 @@ func handle_input(event):
 			_update_grid_history(last_input_position)
 			paint_canvas.queue_redraw()
 		
-		last_input_position = paint_canvas.to_local(event.position)
+		last_input_position = local_position
 		paint_canvas.last_input_position = last_input_position
-		var local_pos = paint_canvas.to_local(event.position)
+		var local_pos = local_position
 		
 	
 		if paint_canvas.canvas_resize.is_resizing:
@@ -87,7 +89,7 @@ func handle_input(event):
 
 	# マウスボタンとタッチ入力の処理
 	elif event is InputEventMouseButton or event is InputEventScreenTouch:
-		var local_pos = paint_canvas.to_local(event.position)
+		var local_pos = local_position
 		
 		if event is InputEventMouseButton:
 			match event.button_index:
@@ -217,6 +219,11 @@ func handle_input(event):
 		# ストロークガイドのクリア（Ctrl+C）
 		elif event.keycode == KEY_C and event.ctrl_pressed:
 			paint_canvas.canvas_draw.clear_stroke_guide()
+
+func _get_event_local_position(event) -> Vector2:
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		return paint_canvas.to_local(event.position)
+	return paint_canvas.get_local_mouse_position()
 
 func _get_stroke_color_for_tool(main: Main) -> Color:
 	return Color.TRANSPARENT if main.current_tool == Main.Tool.ERASER else Main.stroke_color
