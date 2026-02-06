@@ -81,6 +81,8 @@ func handle_input(event):
 		
 		# 回転クロスヘアの更新
 		if paint_canvas.show_directional_crosshair and paint_canvas.is_drawing:
+			# 位置は常に最新カーソルに追従させる
+			paint_canvas.directional_crosshair_position = new_position
 			if movement_delta.length() >= paint_canvas.directional_crosshair_min_movement:
 				var target_angle = movement_delta.angle()
 				paint_canvas.directional_crosshair_angle = lerp_angle(
@@ -88,7 +90,6 @@ func handle_input(event):
 					target_angle,
 					paint_canvas.directional_crosshair_smoothing
 				)
-				paint_canvas.directional_crosshair_position = new_position
 			paint_canvas.update_crosshair_trail(new_position, paint_canvas.directional_crosshair_angle)
 			paint_canvas.queue_redraw()
 
