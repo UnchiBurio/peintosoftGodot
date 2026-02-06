@@ -156,6 +156,13 @@ func _process(_delta):
 func _get_active_paint_canvas() -> Node2D:
 	return active_paint_canvas
 
+# アクティブキャンバス上にカーソルがあるかどうかでカーソル形状を切り替える
+func set_cursor_over_active_canvas(is_over_canvas: bool) -> void:
+	if is_over_canvas:
+		Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+	else:
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+
 # ナビゲーターの表示切り替え
 func toggle_navigator():
 	show_navigator = !show_navigator
