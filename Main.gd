@@ -22,6 +22,8 @@ class_name Main
 @onready var crosshair_trail_interval_slider: HSlider = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow/CrosshairTrailIntervalSlider
 @onready var crosshair_trail_persist_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailPersistCheckBox
 @onready var crosshair_trail_clear_button: Button = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailClearButton
+@onready var crosshair_trail_generate_button: Button = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailGenerateButton
+@onready var crosshair_trail_generate_from_image_button: Button = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailGenerateFromImageButton
 
 var active_paint_canvas: Node2D = null
 
@@ -504,3 +506,11 @@ func _on_crosshair_trail_persist_toggled(pressed: bool) -> void:
 func _on_crosshair_trail_clear_pressed() -> void:
 	if active_paint_canvas and active_paint_canvas.has_method("clear_crosshair_trail"):
 		active_paint_canvas.clear_crosshair_trail()
+
+func _on_crosshair_trail_generate_pressed() -> void:
+	if active_paint_canvas and active_paint_canvas.has_method("generate_crosshair_trail_from_strokes"):
+		active_paint_canvas.generate_crosshair_trail_from_strokes(directional_crosshair_trail_interval)
+
+func _on_crosshair_trail_generate_from_image_pressed() -> void:
+	if active_paint_canvas and active_paint_canvas.has_method("generate_crosshair_trail_from_canvas_image"):
+		active_paint_canvas.generate_crosshair_trail_from_canvas_image(directional_crosshair_trail_interval)
