@@ -88,8 +88,8 @@ class CrosshairTrailMark:
 		angle = mark_angle
 
 # 描画関連の変数
-var stroke_history: Array = []
-var current_stroke: Array = []
+var stroke_history: Array[PackedVector2Array] = []
+var current_stroke: PackedVector2Array = PackedVector2Array()
 var undo_stack: Array = []
 var redo_stack: Array = []
 var is_recording_stroke: bool = false
@@ -257,6 +257,91 @@ func clear_crosshair_trail() -> void:
 func _add_crosshair_trail_mark(position: Vector2, angle: float) -> void:
 	directional_crosshair_trail_marks.append(CrosshairTrailMark.new(position, angle))
 	queue_redraw()
+
+func start_stroke_path(position: Vector2) -> void:
+	current_stroke = PackedVector2Array([position])
+
+func append_stroke_point(position: Vector2) -> void:
+	if current_stroke.is_empty():
+		current_stroke = PackedVector2Array([position])
+		return
+	if current_stroke[current_stroke.size() - 1].is_equal_approx(position):
+		return
+	current_stroke.append(position)
+
+func finish_stroke_path() -> void:
+	if current_stroke.size() > 1:
+		stroke_history.append(current_stroke.duplicate())
+	current_stroke = PackedVector2Array()
+
+func generate_crosshair_trail_from_strokes(interval: float) -> void:
+	if interval <= 0.0:
+		return
+	directional_crosshair_trail_marks.clear()
+	for stroke in stroke_history:
+		if stroke.size() < 2:
+			continue
+		var distance_accumulator := 0.0
+		var last_pos := stroke[0]
+		for i in range(1, stroke.size()):
+			var next_pos = stroke[i]
+			var segment = next_pos - last_pos
+			var segment_length = segment.length()
+			if segment_length <= 0.0:
+				continue
+			var direction = segment / segment_length
+			var remaining = segment_length
+			var current_pos = last_pos
+			while distance_accumulator + remaining >= interval:
+				var distance_needed = interval - distance_accumulator
+				var mark_position = current_pos + direction * distance_needed
+				_add_crosshair_trail_mark(mark_position, direction.angle())
+				current_pos = mark_position
+				remaining -= distance_needed
+				distance_accumulator = 0.0
+			if remaining > 0.0:
+				distance_accumulator += remaining
+				current_pos += direction * remaining
+			last_pos = current_pos
+	queue_redraw()
+
+func generate_crosshair_trail_from_canvas_image(interval: float, edge_threshold: float = 0.15, alpha_threshold: float = 0.1) -> void:
+	if interval <= 0.0:
+		return
+	var image = _create_canvas_image()
+	var width = image.get_width()
+	var height = image.get_height()
+	var cell_size = max(1.0, interval)
+	var occupied_cells: Dictionary = {}
+	directional_crosshair_trail_marks.clear()
+	image.lock()
+	for y in range(1, height - 1):
+		for x in range(1, width - 1):
+			var color = image.get_pixel(x, y)
+			if color.a < alpha_threshold:
+				continue
+			var left = image.get_pixel(x - 1, y)
+			var right = image.get_pixel(x + 1, y)
+			var up = image.get_pixel(x, y - 1)
+			var down = image.get_pixel(x, y + 1)
+			var gradient = Vector2(_luminance(right, alpha_threshold) - _luminance(left, alpha_threshold),
+				_luminance(down, alpha_threshold) - _luminance(up, alpha_threshold))
+			if gradient.length() < edge_threshold:
+				continue
+			var cell = Vector2i(int(floor(float(x) / cell_size)), int(floor(float(y) / cell_size)))
+			if occupied_cells.has(cell):
+				continue
+			occupied_cells[cell] = true
+			var tangent = Vector2(-gradient.y, gradient.x)
+			var angle = 0.0 if tangent.length_squared() <= 0.000001 else tangent.angle()
+			_add_crosshair_trail_mark(Vector2(x, y), angle)
+	image.unlock()
+	queue_redraw()
+
+func _luminance(color: Color, alpha_threshold: float) -> float:
+	if color.a < alpha_threshold:
+		return 0.0
+	return color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722
 
 func _draw_resize_handles():
 	var handle_color = Color(0.2, 0.6, 1.0, 0.8)

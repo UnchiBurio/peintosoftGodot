@@ -53,6 +53,7 @@ func handle_input(event):
 		elif paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(last_input_position):
 			paint_canvas.commit_line(paint_canvas.last_draw_position, last_input_position, _get_stroke_color_for_tool(main), Main.stroke_width)
 			paint_canvas.last_draw_position = last_input_position
+			paint_canvas.append_stroke_point(last_input_position)
 		elif is_connecting_points:
 			connection_end_point = last_input_position
 			paint_canvas.queue_redraw()
@@ -139,16 +140,17 @@ func handle_input(event):
 								if edge != Vector2.ZERO:
 									paint_canvas._start_resize(edge, event.position)
 							else:
-								if main.current_tool == Main.Tool.FILL:
-									if paint_canvas.is_valid_draw_position(local_pos):
-										paint_canvas.start_stroke_recording()
-										paint_canvas.fill_at(local_pos, _get_stroke_color_for_tool(main))
-										paint_canvas.finish_stroke_recording()
+									if main.current_tool == Main.Tool.FILL:
+										if paint_canvas.is_valid_draw_position(local_pos):
+											paint_canvas.start_stroke_recording()
+											paint_canvas.fill_at(local_pos, _get_stroke_color_for_tool(main))
+											paint_canvas.finish_stroke_recording()
 									paint_canvas.get_viewport().set_input_as_handled()
 									return
 								if !paint_canvas.is_drawing:
 									paint_canvas.start_stroke_recording()
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+									paint_canvas.start_stroke_path(local_pos)
 									if paint_canvas.show_directional_crosshair:
 										paint_canvas.start_crosshair_trail(local_pos)
 								paint_canvas.is_drawing = true
@@ -165,6 +167,7 @@ func handle_input(event):
 									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
 								if paint_canvas.show_directional_crosshair:
 									paint_canvas.finish_crosshair_trail()
+								paint_canvas.finish_stroke_path()
 								paint_canvas.finish_stroke_recording()
 
 						paint_canvas.get_viewport().set_input_as_handled()
