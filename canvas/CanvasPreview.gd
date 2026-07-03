@@ -8,7 +8,8 @@ var paint_canvas: Node2D
 enum PointProperty {
 	NONE = 0,
 	INFINITE_LINE = 1,
-	PERPENDICULAR_LINE = 2
+	PERPENDICULAR_LINE = 2,
+	CURSOR_RADIUS_CIRCLE = 3
 	# 今後追加する性質をここに定義
 }
 # 点の情報を管理するクラス

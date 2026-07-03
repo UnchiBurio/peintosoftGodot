@@ -20,7 +20,15 @@ func handle_input(event):
 	if !paint_canvas.solo:
 		if paint_canvas != main.active_paint_canvas:
 			return
-		
+	if paint_canvas.is_fill_in_progress:
+		return
+
+	var redraw_static := false
+	var redraw_grid := false
+	var redraw_preview := false
+	var redraw_crosshair := false
+	var redraw_debug := false
+
 	if event is InputEventMouseMotion or event is InputEventScreenDrag:
 		var new_position = paint_canvas.to_local(event.position)
 		var movement_delta = new_position - last_input_position
@@ -33,29 +41,28 @@ func handle_input(event):
 		
 		last_input_position = new_position
 		paint_canvas.last_input_position = new_position
+		if _should_update_point_attraction_feedback(main, new_position):
+			paint_canvas.update_point_attraction_feedback(new_position)
 		
 		if paint_canvas.show_grid and paint_canvas.show_grid_highlight:
 			_update_grid_history(last_input_position)
-			paint_canvas.queue_redraw()
-		
-		last_input_position = paint_canvas.to_local(event.position)
-		paint_canvas.last_input_position = last_input_position
-		var local_pos = paint_canvas.to_local(event.position)
-		
-	
+			redraw_grid = true
+
 		if paint_canvas.canvas_resize.is_resizing:
 			paint_canvas._update_resize(event.position)
 			paint_canvas.get_viewport().set_input_as_handled()
-			paint_canvas.queue_redraw()
+			redraw_static = true
 		elif paint_canvas.canvas_move.is_moving:
 			paint_canvas._update_move(event.position)
 			paint_canvas.get_viewport().set_input_as_handled()
 		elif paint_canvas.is_drawing and paint_canvas._is_position_in_canvas(last_input_position):
-			paint_canvas.commit_line(paint_canvas.last_draw_position, last_input_position, _get_stroke_color_for_tool(main), Main.stroke_width)
-			paint_canvas.last_draw_position = last_input_position
+			var draw_position = paint_canvas.update_point_attraction_feedback(last_input_position)
+			paint_canvas.commit_line(paint_canvas.last_draw_position, draw_position, _get_stroke_color_for_tool(main), Main.stroke_width)
+			paint_canvas.last_draw_position = draw_position
+			redraw_debug = paint_canvas.deback_mode
 		elif is_connecting_points:
 			connection_end_point = last_input_position
-			paint_canvas.queue_redraw()
+			redraw_preview = true
 		elif is_ctrl_right_click_dragging:
 			if selected_point != null:
 				var delta = last_input_position - selected_point.position
@@ -69,21 +76,28 @@ func handle_input(event):
 						if connection.get_end_position().is_equal_approx(selected_point.position - delta):
 							connection.set_end_position(selected_point.position)
 					
-				paint_canvas.queue_redraw()
+				redraw_preview = true
 
 		# プレビュー線の表示更新
 		if paint_canvas.show_preview_line:
-			paint_canvas.queue_redraw()
+			redraw_preview = true
 			
 		# ストロークガイドの更新
 		if paint_canvas.canvas_draw.show_stroke_guide and paint_canvas.preview_points.size() > 0 and paint_canvas.is_drawing:
+			var previous_guide_size = paint_canvas.canvas_draw.guide_points.size()
 			paint_canvas.canvas_draw.update_stroke_guide(new_position)
+			if paint_canvas.canvas_draw.guide_points.size() != previous_guide_size:
+				redraw_preview = true
 		
 		# 回転クロスヘアの更新
 		if paint_canvas.show_directional_crosshair and paint_canvas.is_drawing:
 			paint_canvas.update_directional_crosshair(new_position, movement_delta)
 			paint_canvas.update_crosshair_trail(new_position, paint_canvas.directional_crosshair_angle)
-			paint_canvas.queue_redraw()
+			redraw_crosshair = true
+
+		if paint_canvas == main.active_paint_canvas:
+			if paint_canvas.show_cursor_cross or paint_canvas.show_directional_crosshair or main.current_tool == Main.Tool.BRUSH or main.current_tool == Main.Tool.ERASER:
+				redraw_crosshair = true
 
 	# マウスボタンとタッチ入力の処理
 	elif event is InputEventMouseButton or event is InputEventScreenTouch:
@@ -99,13 +113,14 @@ func handle_input(event):
 								is_connecting_points = true
 								connection_start_point = start_point
 								connection_end_point = local_pos
+								redraw_preview = true
 							else:
 								if is_connecting_points:
 									var end_point = _get_or_create_point_at(local_pos)
 									if end_point != connection_start_point:
 										paint_canvas.create_connection(connection_start_point, end_point)
 									is_connecting_points = false
-									paint_canvas.queue_redraw()
+									redraw_preview = true
 						else:
 							if event.pressed:
 								if Input.is_key_pressed(KEY_CTRL):
@@ -113,19 +128,26 @@ func handle_input(event):
 									ctrl_right_click_start_pos = local_pos
 									var clicked_point = paint_canvas._find_point_at_position(local_pos)
 									if clicked_point != null:
-										selected_point = clicked_point
+										paint_canvas.set_selected_preview_point(clicked_point)
+									else:
+										paint_canvas.set_selected_preview_point(null)
 								else:
 									_handle_right_click(local_pos)
+									redraw_preview = true
 									if paint_canvas.canvas_draw.show_stroke_guide:
 										paint_canvas.canvas_draw.start_stroke_guide(local_pos)
+										redraw_preview = true
 							else:
 								if is_ctrl_right_click_dragging:
 									is_ctrl_right_click_dragging = false
-									selected_point = null
+									paint_canvas.set_selected_preview_point(null)
+									redraw_preview = true
 								elif paint_canvas.canvas_draw.show_stroke_guide:
 									paint_canvas.canvas_draw.end_stroke_guide()
+									redraw_preview = true
 									
 					paint_canvas.get_viewport().set_input_as_handled()
+					_flush_overlay_redraws(redraw_static, redraw_grid, redraw_preview, redraw_crosshair, redraw_debug)
 					return
 				MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN:
 					return
@@ -134,38 +156,48 @@ func handle_input(event):
 						if event.pressed:
 							if Input.is_key_pressed(KEY_CTRL):
 								paint_canvas._start_move(event.position)
+								redraw_static = true
 							elif Input.is_key_pressed(KEY_ALT):
 								var edge = paint_canvas._get_resize_edge(local_pos)
 								if edge != Vector2.ZERO:
 									paint_canvas._start_resize(edge, event.position)
+									redraw_static = true
 							else:
 								if main.current_tool == Main.Tool.FILL:
 									if paint_canvas.is_valid_draw_position(local_pos):
-										paint_canvas.start_stroke_recording()
 										paint_canvas.fill_at(local_pos, _get_stroke_color_for_tool(main))
-										paint_canvas.finish_stroke_recording()
+										redraw_debug = paint_canvas.deback_mode
 									paint_canvas.get_viewport().set_input_as_handled()
+									_flush_overlay_redraws(redraw_static, redraw_grid, redraw_preview, redraw_crosshair, redraw_debug)
 									return
 								if !paint_canvas.is_drawing:
+									var draw_position = paint_canvas.update_point_attraction_feedback(local_pos)
 									paint_canvas.start_stroke_recording()
-									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+									paint_canvas.commit_line(draw_position, draw_position, _get_stroke_color_for_tool(main), Main.stroke_width)
 									if paint_canvas.show_directional_crosshair:
 										paint_canvas.start_crosshair_trail(local_pos)
+									redraw_debug = paint_canvas.deback_mode
 								paint_canvas.is_drawing = true
-								paint_canvas.last_draw_position = local_pos
+								paint_canvas.last_draw_position = paint_canvas.attracted_pen_position
 								last_input_position = local_pos
+								redraw_crosshair = true
 						else:
 							if paint_canvas.canvas_resize.is_resizing:
 								paint_canvas._end_resize()
+								redraw_static = true
 							elif paint_canvas.canvas_move.is_moving:
 								paint_canvas._end_move()
 							elif paint_canvas.is_drawing:
 								paint_canvas.is_drawing = false
-								if paint_canvas.last_draw_position != local_pos:
-									paint_canvas.commit_line(local_pos, local_pos, _get_stroke_color_for_tool(main), Main.stroke_width)
+								var draw_position = paint_canvas.update_point_attraction_feedback(local_pos)
+								if paint_canvas.last_draw_position != draw_position:
+									paint_canvas.commit_line(draw_position, draw_position, _get_stroke_color_for_tool(main), Main.stroke_width)
+									redraw_debug = paint_canvas.deback_mode
 								if paint_canvas.show_directional_crosshair:
 									paint_canvas.finish_crosshair_trail()
+									redraw_crosshair = true
 								paint_canvas.finish_stroke_recording()
+								redraw_crosshair = true
 
 						paint_canvas.get_viewport().set_input_as_handled()
 
@@ -176,7 +208,7 @@ func handle_input(event):
 			if event.shift_pressed:
 				# Shift+G: グリッドハイライトの表示切り替え
 				paint_canvas.show_grid_highlight = not paint_canvas.show_grid_highlight
-				paint_canvas.queue_redraw()
+				redraw_grid = true
 			elif event.ctrl_pressed:
 				# Ctrl+G: ストロークガイドの表示切り替え
 				paint_canvas.canvas_draw.toggle_stroke_guide()
@@ -184,31 +216,38 @@ func handle_input(event):
 				if paint_canvas.canvas_draw.show_stroke_guide and paint_canvas.preview_points.size() > 0:
 					var mouse_pos = paint_canvas.get_local_mouse_position()
 					paint_canvas.canvas_draw.start_stroke_guide(mouse_pos)
+				redraw_preview = true
 			else:
 				# G: 通常のグリッド表示切り替え
 				paint_canvas.show_grid = not paint_canvas.show_grid
-				paint_canvas.queue_redraw()
+				redraw_grid = true
 		
 		# プレビュー線の表示制御（Pキー）
 		elif event.keycode == KEY_P:
-			paint_canvas.show_preview_line = not paint_canvas.show_preview_line
-			paint_canvas.queue_redraw()
+			if event.shift_pressed:
+				paint_canvas.point_attraction_enabled = not paint_canvas.point_attraction_enabled
+			else:
+				paint_canvas.show_preview_line = not paint_canvas.show_preview_line
+			paint_canvas.update_point_attraction_feedback(paint_canvas.last_input_position)
+			redraw_preview = true
+			redraw_crosshair = true
 		
 		# プレビュー点とプレビュー線のリセット（Rキー）
 		elif event.keycode == KEY_R:
 			paint_canvas.preview_points.clear()
 			paint_canvas.preview_connections.clear()
-			paint_canvas.queue_redraw()
+			paint_canvas.update_point_attraction_feedback(paint_canvas.last_input_position)
+			redraw_preview = true
 		
 		# カーソル十字の表示制御（Oキー）
 		elif event.keycode == KEY_O:
 			paint_canvas.show_cursor_cross = not paint_canvas.show_cursor_cross
-			paint_canvas.queue_redraw()
+			redraw_crosshair = true
 		
 		# 回転クロスヘアの表示制御（Iキー）
 		elif event.keycode == KEY_I:
 			paint_canvas.show_directional_crosshair = not paint_canvas.show_directional_crosshair
-			paint_canvas.queue_redraw()
+			redraw_crosshair = true
 		
 		# レイヤー追加（Lキー）
 		elif event.keycode == KEY_L:
@@ -217,9 +256,23 @@ func handle_input(event):
 		# ストロークガイドのクリア（Ctrl+C）
 		elif event.keycode == KEY_C and event.ctrl_pressed:
 			paint_canvas.canvas_draw.clear_stroke_guide()
+			redraw_preview = true
+
+	_flush_overlay_redraws(redraw_static, redraw_grid, redraw_preview, redraw_crosshair, redraw_debug)
 
 func _get_stroke_color_for_tool(main: Main) -> Color:
 	return Color.TRANSPARENT if main.current_tool == Main.Tool.ERASER else Main.stroke_color
+
+func _should_update_point_attraction_feedback(main: Main, position: Vector2) -> bool:
+	if not paint_canvas._is_position_in_canvas(position):
+		return false
+	if main.current_tool != Main.Tool.BRUSH and main.current_tool != Main.Tool.ERASER:
+		return false
+	if paint_canvas.canvas_resize.is_resizing or paint_canvas.canvas_move.is_moving:
+		return false
+	if is_connecting_points or is_ctrl_right_click_dragging:
+		return false
+	return true
 
 func _check_grid_intersection(from: Vector2, to: Vector2):
 	if not paint_canvas._is_position_in_canvas(from) or not paint_canvas._is_position_in_canvas(to):
@@ -317,12 +370,16 @@ func _handle_right_click(position: Vector2):
 	else:
 		var existing_point = paint_canvas._find_point_at_position(position)
 		if existing_point != null:
-			selected_point = existing_point
+			paint_canvas.set_selected_preview_point(existing_point)
 			
-			for property in range(paint_canvas.popup_menu.item_count - 2):
+			for property in range(paint_canvas.popup_menu.item_count):
+				if not paint_canvas.popup_menu.is_item_checkable(property):
+					continue
 				var property_id = paint_canvas.popup_menu.get_item_id(property)
-				paint_canvas.popup_menu.set_item_checked(property, 
-					selected_point.has_property(property_id))
+				paint_canvas.popup_menu.set_item_checked(
+					property,
+					paint_canvas.selected_point.has_property(property_id)
+				)
 			
 			paint_canvas.popup_menu.position = paint_canvas.get_viewport().get_mouse_position()
 			paint_canvas.popup_menu.popup()
@@ -331,4 +388,15 @@ func _handle_right_click(position: Vector2):
 			paint_canvas.emit_signal("canvas_updated")
 	
 	paint_canvas._emit_preview_lines_requested()
-	paint_canvas.queue_redraw()
+
+func _flush_overlay_redraws(redraw_static: bool, redraw_grid: bool, redraw_preview: bool, redraw_crosshair: bool, redraw_debug: bool) -> void:
+	if redraw_static:
+		paint_canvas.queue_static_overlay_redraw()
+	if redraw_grid:
+		paint_canvas.queue_grid_overlay_redraw()
+	if redraw_preview:
+		paint_canvas.queue_preview_overlay_redraw()
+	if redraw_crosshair:
+		paint_canvas.queue_crosshair_overlay_redraw()
+	if redraw_debug:
+		paint_canvas.queue_debug_overlay_redraw()

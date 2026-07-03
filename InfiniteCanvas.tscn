@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://dn28m2y1trmmi"]
+[gd_scene format=3 uid="uid://dn28m2y1trmmi"]
 
-[ext_resource type="Script" uid="uid://dgjvhd23qta8" path="res://canvas/InfiniteCanvas.gd" id="1_8e8nc"]
+[ext_resource type="Script" uid="uid://dgjvhd23qta8" path="res://src/canvas/InfiniteCanvas.gd" id="1_8e8nc"]
 
 [node name="InfiniteCanvas" type="Node2D"]
 script = ExtResource("1_8e8nc")

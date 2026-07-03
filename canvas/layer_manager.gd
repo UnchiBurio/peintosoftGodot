@@ -73,9 +73,6 @@ func set_target_canvas(canvas: Node2D):
 		delete_button.disabled = false
 		_refresh_list()
 		
-		# キャンバスが選択されたらウィンドウを表示する（お好みで）
-		if not visible:
-			show()
 	else:
 		_clear_ui()
 

@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://b78w7jc0208ax"]
+
+[ext_resource type="Script" uid="uid://kg4ydsk04kqr" path="res://src/editor/PreviewLinesEditor.gd" id="1_2xngf"]
+
+[node name="PreviewLinesEditor" type="Window"]
+position = Vector2i(0, 36)
+size = Vector2i(120, 100)
+script = ExtResource("1_2xngf")

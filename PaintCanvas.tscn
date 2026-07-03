@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://66rd0kedm8bk"]
+[gd_scene format=3 uid="uid://66rd0kedm8bk"]
 
-[ext_resource type="Script" path="res://canvas/PaintCanvas.gd" id="1_cyd1w"]
+[ext_resource type="Script" uid="uid://dcncogrrsdpye" path="res://src/canvas/PaintCanvas.gd" id="1_cyd1w"]
 
 [sub_resource type="GDScript" id="GDScript_at4i2"]
 script/source = "# PaintCanvasGrid.gd

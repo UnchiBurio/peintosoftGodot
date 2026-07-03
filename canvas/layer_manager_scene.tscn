@@ -1,20 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://dijdpgcxp8ebt"]
+[gd_scene format=3 uid="uid://dijdpgcxp8ebt"]
 
-[ext_resource type="Script" uid="uid://cwx0ui7kpnxk3" path="res://canvas/layer_manager.gd" id="1_fvhwy"]
+[ext_resource type="Script" uid="uid://dw2nto7m7wyq5" path="res://src/canvas/layer_manager.gd" id="1_fvhwy"]
 
 [node name="LayerManagerScene" type="Window"]
 size = Vector2i(200, 300)
 script = ExtResource("1_fvhwy")
 
 [node name="Panel" type="Panel" parent="."]
-anchors_preset = 15
-offset_right = 0.0
-offset_bottom = 0.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
-anchors_preset = 15
-offset_right = 0.0
-offset_bottom = 0.0
+layout_mode = 0
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
@@ -28,9 +23,9 @@ layout_mode = 2
 text = "-"
 
 [node name="LayerList" type="ItemList" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 80)
 
 [node name="NameEdit" type="LineEdit" parent="Panel/VBoxContainer"]
 layout_mode = 2
@@ -48,9 +43,9 @@ layout_mode = 2
 text = "Opacity"
 
 [node name="OpacitySlider" type="HSlider" parent="Panel/VBoxContainer/OpacityRow"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.01
 value = 1.0

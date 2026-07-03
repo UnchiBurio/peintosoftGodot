@@ -16,7 +16,7 @@ var canvas_preview_end := Vector2.ZERO
 var minimum_canvas_size := Vector2(100, 100)  # キャンバスの最小サイズ
 
 # シーンの参照
-const PaintCanvasScene = preload("res://PaintCanvas.tscn")
+const PaintCanvasScene = preload("res://src/PaintCanvas.tscn")
 
 # 画像ドロップ関連の変数
 var drag_data: Dictionary = {}
@@ -38,8 +38,9 @@ func _draw():
 		
 		# サイズ表示のための設定
 		var size_text = "%dx%d" % [int(rect.size.x), int(rect.size.y)]
-		var font_size = 16
-		var padding = 5
+		var zoom_scale = 1.0 / current_zoom
+		var font_size = max(1, int(round(16.0 * zoom_scale)))
+		var padding = 5.0 * zoom_scale
 		
 		# テキストのサイズを取得
 		var text_size = ThemeDB.fallback_font.get_string_size(
@@ -144,6 +145,16 @@ func _handle_zoom(zoom_factor: float, center: Vector2):
 	scale = Vector2.ONE * current_zoom
 	var new_mouse_pos = get_global_transform().affine_inverse() * center
 	position += (new_mouse_pos - old_mouse_pos) * current_zoom
+	_update_zoom_independent_canvas_ui()
+	queue_redraw()
+
+func get_current_zoom() -> float:
+	return current_zoom
+
+func _update_zoom_independent_canvas_ui() -> void:
+	for child in get_children():
+		if child.has_method("update_zoom_independent_ui"):
+			child.update_zoom_independent_ui()
 
 func _start_pan(position: Vector2):
 	is_panning = true
@@ -220,7 +231,8 @@ func _apply_image_to_canvas(canvas: Node2D, source_image: Image) -> void:
 			var src_width = mini(chunk_size, int(canvas.canvas_size.x) - src_x)
 			var src_height = mini(chunk_size, int(canvas.canvas_size.y) - src_y)
 			
-			# チャンクイメージを準備
+			# インポート時は通常のビットマップチャンクとして扱う
+			chunk.materialize()
 			chunk.image.fill(Color.TRANSPARENT)
 			
 			# 画像の該当部分をコピー
@@ -230,12 +242,11 @@ func _apply_image_to_canvas(canvas: Node2D, source_image: Image) -> void:
 								Vector2i.ZERO)
 			
 			# テクスチャを更新
-			chunk.texture = ImageTexture.create_from_image(chunk.image)
-			chunk.texture_rect.texture = chunk.texture
+			chunk.sync_texture()
 			chunk.mark_dirty()
 	
 	# キャンバスを更新
-	canvas.queue_redraw()
+	canvas.queue_all_overlay_redraws()
 	canvas.emit_signal("canvas_updated")
 
 func _notification(what: int) -> void:

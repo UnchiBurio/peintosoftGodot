@@ -1,6 +1,8 @@
 # DraggableNavigator.gd
 extends TextureRect
 
+signal close_requested
+
 var dragging := false
 var resizing := false
 var drag_start_position := Vector2.ZERO
@@ -10,6 +12,7 @@ var border_color := Color.WHITE
 var border_width := 2.0
 var resize_handle_size := 12.0
 var min_size := Vector2(20, 20)
+var close_button: Button
 
 func _ready():
 	# マウス入力を受け付けるように設定
@@ -17,6 +20,27 @@ func _ready():
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	stretch_mode = TextureRect.STRETCH_SCALE
 	gui_input.connect(_on_gui_input)
+	_setup_close_button()
+
+func _setup_close_button() -> void:
+	close_button = Button.new()
+	close_button.name = "CloseButton"
+	close_button.text = "x"
+	close_button.tooltip_text = "閉じる"
+	close_button.focus_mode = Control.FOCUS_NONE
+	close_button.custom_minimum_size = Vector2(22, 22)
+	close_button.anchor_left = 1.0
+	close_button.anchor_right = 1.0
+	close_button.offset_left = -26.0
+	close_button.offset_top = 4.0
+	close_button.offset_right = -4.0
+	close_button.offset_bottom = 26.0
+	close_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	close_button.pressed.connect(_on_close_button_pressed)
+	add_child(close_button)
+
+func _on_close_button_pressed() -> void:
+	close_requested.emit()
 
 func _draw():
 	# 枠線を描画

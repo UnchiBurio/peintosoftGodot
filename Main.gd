@@ -4,13 +4,18 @@ class_name Main
 @onready var tab_container=$VBoxContainer/TabContainer
 @onready var file_menu=$VBoxContainer/MenuBar/File
 @onready var edit_menu=$VBoxContainer/MenuBar/Edit
+@onready var view_menu=$VBoxContainer/MenuBar/View
 @onready var color_picker=$ColorPickerButton
 @onready var navigator_viewport: SubViewport = $NavigatorViewport
 @onready var navigator_texture_rect: TextureRect = $NavigatorTextureRect
 @onready var layer_manager = $VBoxContainer/LayerManagerScene
+@onready var position_label: Label = find_child("PositionLabel", true, false) as Label
+@onready var tool_window: Control = $ToolWindow
+@onready var crosshair_window: Control = $CrosshairWindow
 @onready var brush_button: Button = $ToolWindow/MarginContainer/VBoxContainer/BrushButton
 @onready var eraser_button: Button = $ToolWindow/MarginContainer/VBoxContainer/EraserButton
 @onready var fill_button: Button = $ToolWindow/MarginContainer/VBoxContainer/FillButton
+@onready var point_attraction_strength_slider: HSlider = $ToolWindow/MarginContainer/VBoxContainer/PointAttractionStrengthRow/PointAttractionStrengthSlider
 @onready var crosshair_enabled_checkbox: CheckBox = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox
 @onready var crosshair_primary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker
 @onready var crosshair_secondary_color_picker: ColorPickerButton = $CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker
@@ -39,6 +44,7 @@ var tool_button_group: ButtonGroup
 # ツールパラメータ
 static var stroke_color = Color.BLACK
 static var stroke_width = 1.0
+var point_attraction_strength: float = 0.18
 
 # 回転クロスヘア設定
 var directional_crosshair_enabled: bool = false
@@ -57,10 +63,17 @@ var show_navigator: bool = true
 var navigator_scale: float = 1.0
 var navigator_flip_vertical: bool = false
 var navigator_flip_horizontal: bool = false
+const NAVIGATOR_UPDATE_INTERVAL_MS := 120
+const VIEW_PANEL_TOOLS := 0
+const VIEW_PANEL_CROSSHAIR := 1
+const VIEW_PANEL_LAYERS := 2
+const VIEW_PANEL_NAVIGATOR := 3
+var last_navigator_update_ms := 0
 
 func _ready():
 	tab_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tab_container.tab_changed.connect(_on_tab_changed)
 	
 	# 初期タブの作成
 	_create_new_canvas()
@@ -68,6 +81,8 @@ func _ready():
 	# メニューバーの設定
 	file_menu.get_popup().id_pressed.connect(_on_file_menu_pressed)
 	edit_menu.get_popup().id_pressed.connect(_on_edit_menu_pressed)
+	_setup_view_menu()
+	_setup_panel_close_signals()
 	
 	# 初期カラーを設定
 	color_picker.color = stroke_color
@@ -81,6 +96,7 @@ func _ready():
 	crosshair_smoothing_slider.value = directional_crosshair_smoothing
 	crosshair_trail_interval_slider.value = directional_crosshair_trail_interval
 	crosshair_trail_persist_checkbox.button_pressed = directional_crosshair_trail_persist
+	point_attraction_strength_slider.value = point_attraction_strength
 	
 	# ナビゲーター用のViewportTextureを設定
 	navigator_texture_rect.texture = navigator_viewport.get_texture()
@@ -100,9 +116,70 @@ func _ready():
 	# （ボタンのパスは実際の配置に合わせてください）
 	var layer_btn = find_child("LayerButton", true, false)
 	if layer_btn:
-		layer_btn.pressed.connect(func(): layer_manager.show())
+		layer_btn.pressed.connect(func(): _set_layer_manager_visible(true))
 	
 	_setup_tool_buttons()
+	_refresh_viewport_update_modes()
+	_sync_active_canvas_with_current_tab()
+
+func _setup_view_menu() -> void:
+	var popup = view_menu.get_popup()
+	popup.clear()
+	popup.add_check_item("ツール", VIEW_PANEL_TOOLS)
+	popup.add_check_item("クロスヘア", VIEW_PANEL_CROSSHAIR)
+	popup.add_check_item("レイヤー", VIEW_PANEL_LAYERS)
+	popup.add_check_item("ナビゲーター", VIEW_PANEL_NAVIGATOR)
+	if not popup.id_pressed.is_connected(_on_view_menu_pressed):
+		popup.id_pressed.connect(_on_view_menu_pressed)
+	_sync_view_menu_checks()
+
+func _setup_panel_close_signals() -> void:
+	if tool_window.has_signal("close_requested"):
+		tool_window.close_requested.connect(_sync_view_menu_checks)
+	if crosshair_window.has_signal("close_requested"):
+		crosshair_window.close_requested.connect(_sync_view_menu_checks)
+	if navigator_texture_rect.has_signal("close_requested"):
+		navigator_texture_rect.close_requested.connect(func(): _set_navigator_visible(false))
+	if layer_manager.has_signal("close_requested"):
+		layer_manager.close_requested.connect(func(): call_deferred("_sync_view_menu_checks"))
+
+func _on_view_menu_pressed(id: int) -> void:
+	match id:
+		VIEW_PANEL_TOOLS:
+			_toggle_panel(tool_window)
+		VIEW_PANEL_CROSSHAIR:
+			_toggle_panel(crosshair_window)
+		VIEW_PANEL_LAYERS:
+			_set_layer_manager_visible(not layer_manager.visible)
+		VIEW_PANEL_NAVIGATOR:
+			_set_navigator_visible(not show_navigator)
+
+func _toggle_panel(panel: Control) -> void:
+	panel.visible = not panel.visible
+	if panel.visible and panel.has_method("_clamp_to_viewport"):
+		panel._clamp_to_viewport()
+	_sync_view_menu_checks()
+
+func _set_layer_manager_visible(is_visible: bool) -> void:
+	if is_visible:
+		layer_manager.show()
+	else:
+		layer_manager.hide()
+	_sync_view_menu_checks()
+
+func _sync_view_menu_checks() -> void:
+	if not is_node_ready() or not view_menu:
+		return
+	var popup = view_menu.get_popup()
+	_set_popup_item_checked(popup, VIEW_PANEL_TOOLS, tool_window.visible)
+	_set_popup_item_checked(popup, VIEW_PANEL_CROSSHAIR, crosshair_window.visible)
+	_set_popup_item_checked(popup, VIEW_PANEL_LAYERS, layer_manager.visible)
+	_set_popup_item_checked(popup, VIEW_PANEL_NAVIGATOR, show_navigator)
+
+func _set_popup_item_checked(popup: PopupMenu, id: int, checked: bool) -> void:
+	var index = popup.get_item_index(id)
+	if index != -1:
+		popup.set_item_checked(index, checked)
 
 
 func _on_navigator_draw():
@@ -110,16 +187,16 @@ func _on_navigator_draw():
 	if !show_navigator:
 		return
 	
-	# 現在アクティブなキャンバスを取得
-	var active_canvas = _get_active_paint_canvas()
-	if not active_canvas:
-		return
-	
 	# ナビゲーターの背景を描画
 	draw_node.draw_rect(Rect2(Vector2.ZERO, Vector2(navigator_viewport.size)), 
 					   Color(0.2, 0.2, 0.2, 0.8), true)
 	draw_node.draw_rect(Rect2(Vector2.ZERO, Vector2(navigator_viewport.size)), 
 					   Color.WHITE, false)
+
+	# 現在アクティブなキャンバスを取得
+	var active_canvas = _get_active_paint_canvas()
+	if not active_canvas:
+		return
 	
 	# スケールの計算
 	var scale_x = (float(navigator_viewport.size.x) - 20.0) / active_canvas.canvas_size.x
@@ -137,20 +214,104 @@ func _on_navigator_draw():
 		for chunk in layer.chunks.values():
 			var chunk_pos = Vector2(chunk.position * active_canvas.CHUNK_SIZE) * navigator_scale
 			var chunk_preview_pos = preview_pos + chunk_pos
-			var chunk_size = Vector2.ONE * active_canvas.CHUNK_SIZE * navigator_scale
-			
-			draw_node.draw_texture_rect(
-				chunk.texture,
-				Rect2(chunk_preview_pos, chunk_size),
-				false,
-				Color(1.0, 1.0, 1.0, layer.opacity)
-			)
+			var chunk_canvas_rect = active_canvas._get_chunk_canvas_rect(chunk.position)
+			var chunk_size = Vector2(chunk_canvas_rect.size) * navigator_scale
+			match chunk.storage_mode:
+				CanvasChunk.StorageMode.SOLID:
+					var draw_color = chunk.get_navigator_modulate(layer.opacity)
+					if draw_color.a > 0.0:
+						draw_node.draw_rect(Rect2(chunk_preview_pos, chunk_size), draw_color, true)
+				CanvasChunk.StorageMode.BITMAP:
+					if chunk.texture != null:
+						draw_node.draw_texture_rect(
+							chunk.texture,
+							Rect2(chunk_preview_pos, chunk_size),
+							false,
+							chunk.get_navigator_modulate(layer.opacity)
+						)
 
 func _process(_delta):
 	# マウス位置の更新
-	if infinite_canvas:
+	if infinite_canvas and position_label:
 		var mouse_pos = infinite_canvas.get_local_mouse_position()
-		$VBoxContainer/StatusBar/HBoxContainer/PositionLabel.text = "Position: %d, %d" % [mouse_pos.x, mouse_pos.y]
+		position_label.text = "Position: %d, %d" % [mouse_pos.x, mouse_pos.y]
+
+func _get_viewport_container(tab_index: int) -> Node:
+	if tab_index < 0 or tab_index >= tab_container.get_tab_count():
+		return null
+	return tab_container.get_child(tab_index)
+
+func _get_tab_viewport(tab_index: int) -> SubViewport:
+	var viewport_container = _get_viewport_container(tab_index)
+	if viewport_container and viewport_container.get_child_count() > 0:
+		return viewport_container.get_child(0) as SubViewport
+	return null
+
+func _get_tab_root_canvas(tab_index: int) -> Node:
+	var viewport = _get_tab_viewport(tab_index)
+	if viewport and viewport.get_child_count() > 0:
+		return viewport.get_child(0)
+	return null
+
+func _find_first_paint_canvas(root: Node) -> Node2D:
+	if root == null:
+		return null
+	for child in root.get_children():
+		if child is Node2D and child.has_method("commit_line"):
+			return child
+	return null
+
+func _refresh_viewport_update_modes() -> void:
+	var current_tab = tab_container.get_current_tab()
+	for i in range(tab_container.get_tab_count()):
+		var viewport = _get_tab_viewport(i)
+		if viewport == null:
+			continue
+		viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if i == current_tab else SubViewport.UPDATE_DISABLED
+
+func _sync_active_canvas_with_current_tab() -> void:
+	infinite_canvas = _get_tab_root_canvas(tab_container.get_current_tab()) as Node2D
+	var next_canvas = _find_first_paint_canvas(infinite_canvas)
+	_set_active_canvas(next_canvas)
+
+func _set_active_canvas(canvas: Node2D) -> void:
+	if active_paint_canvas == canvas:
+		if active_paint_canvas and active_paint_canvas.has_method("queue_active_state_redraw"):
+			active_paint_canvas.queue_active_state_redraw()
+		if layer_manager and active_paint_canvas:
+			layer_manager.set_target_canvas(active_paint_canvas)
+		return
+
+	var previous_canvas = active_paint_canvas
+	active_paint_canvas = canvas
+
+	if previous_canvas != null and is_instance_valid(previous_canvas) and previous_canvas.has_method("queue_active_state_redraw"):
+		previous_canvas.queue_active_state_redraw()
+
+	if active_paint_canvas != null and active_paint_canvas.has_method("queue_active_state_redraw"):
+		active_paint_canvas.queue_active_state_redraw()
+		_apply_directional_crosshair_settings(active_paint_canvas)
+		_apply_point_attraction_settings(active_paint_canvas)
+
+	if layer_manager:
+		layer_manager.set_target_canvas(active_paint_canvas)
+
+	_request_navigator_update(true)
+
+func _request_navigator_update(force: bool = false) -> void:
+	if not show_navigator:
+		return
+	if not active_paint_canvas:
+		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		navigator_viewport.get_child(0).queue_redraw()
+		return
+	var now = Time.get_ticks_msec()
+	var is_busy = bool(active_paint_canvas.get("is_drawing")) or bool(active_paint_canvas.get("is_fill_in_progress"))
+	if not force and is_busy and now - last_navigator_update_ms < NAVIGATOR_UPDATE_INTERVAL_MS:
+		return
+	last_navigator_update_ms = now
+	navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	navigator_viewport.get_child(0).queue_redraw()
 
 # 現在アクティブなキャンバスを取得
 func _get_active_paint_canvas() -> Node2D:
@@ -165,23 +326,24 @@ func set_cursor_over_active_canvas(is_over_canvas: bool) -> void:
 
 # ナビゲーターの表示切り替え
 func toggle_navigator():
-	show_navigator = !show_navigator
+	_set_navigator_visible(not show_navigator)
+
+func _set_navigator_visible(is_visible: bool) -> void:
+	show_navigator = is_visible
 	navigator_texture_rect.visible = show_navigator
 	if show_navigator:
-		# ナビゲーター表示時に一度更新
-		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		navigator_viewport.get_child(0).queue_redraw()
+		_request_navigator_update(true)
 	else:
 		# 非表示時は更新を無効化
 		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_sync_view_menu_checks()
 
 func toggle_navigator_flip_vertical():
 	# 関数名は同じでも内部で水平反転を扱う
 	navigator_flip_horizontal = !navigator_flip_horizontal
 	navigator_texture_rect.flip_h = navigator_flip_horizontal  # flip_vからflip_hに変更
 	if show_navigator:
-		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		navigator_viewport.get_child(0).queue_redraw()
+		_request_navigator_update(true)
 
 # キー入力の処理を追加
 func _unhandled_input(event):
@@ -200,6 +362,46 @@ func _unhandled_input(event):
 				toggle_navigator()
 			KEY_V:
 				toggle_navigator_flip_vertical()
+			KEY_DELETE:
+				_request_delete_active_canvas()
+				get_viewport().set_input_as_handled()
+
+func _request_delete_active_canvas() -> void:
+	if not active_paint_canvas or not is_instance_valid(active_paint_canvas):
+		return
+	if bool(active_paint_canvas.get("is_drawing")) or bool(active_paint_canvas.get("is_fill_in_progress")):
+		return
+	
+	var canvas_to_delete = active_paint_canvas
+	var dialog = ConfirmationDialog.new()
+	dialog.title = "キャンバスの削除"
+	dialog.dialog_text = "選択中のキャンバスを削除しますか？"
+	dialog.size = Vector2(300, 100)
+	dialog.get_ok_button().text = "削除"
+	dialog.get_cancel_button().text = "キャンセル"
+	dialog.confirmed.connect(
+		func():
+			if not is_instance_valid(canvas_to_delete):
+				return
+			var next_canvas = _find_next_paint_canvas_excluding(infinite_canvas, canvas_to_delete)
+			canvas_to_delete.queue_free()
+			_set_active_canvas(next_canvas)
+			_request_navigator_update(true)
+	)
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.confirmed.connect(func(): dialog.queue_free())
+	get_tree().root.add_child(dialog)
+	dialog.popup_centered()
+
+func _find_next_paint_canvas_excluding(root: Node, excluded_canvas: Node) -> Node2D:
+	if root == null:
+		return null
+	for child in root.get_children():
+		if child == excluded_canvas:
+			continue
+		if child is Node2D and child.has_method("commit_line"):
+			return child
+	return null
 
 func _on_file_menu_pressed(id: int):
 	match id:
@@ -227,33 +429,28 @@ func _create_new_canvas():
 	# SubViewportの設定
 	var viewport = SubViewport.new()
 	viewport.handle_input_locally = false
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	viewport.size = get_viewport().get_visible_rect().size
 	viewport_container.add_child(viewport)
 	
 	# 無限キャンバスの作成
-	var infinite_canvas = preload("res://InfiniteCanvas.tscn").instantiate()
-	viewport.add_child(infinite_canvas)
+	var new_infinite_canvas = preload("res://src/InfiniteCanvas.tscn").instantiate()
+	viewport.add_child(new_infinite_canvas)
 	
 	# キャンバスの入力シグナルを接続
-	for child in infinite_canvas.get_children():
+	for child in new_infinite_canvas.get_children():
 		if child is Node2D and child.has_method("_draw") and child.has_method("commit_line"):
-			# 新しく作成されたキャンバスを自動的にアクティブにする
-			active_paint_canvas = child
-			_apply_directional_crosshair_settings(active_paint_canvas)
 			# 入力シグナルを接続
 			child.gui_input.connect(_on_canvas_input.bind(child))
-			
-			if layer_manager:
-				layer_manager.set_target_canvas(active_paint_canvas)
 	
 	# タブに追加
 	canvas_counter += 1
 	tab_container.add_child(viewport_container)
-	tab_container.set_tab_title(
-		tab_container.get_tab_count() - 1, 
-		"Canvas " + str(canvas_counter)
-	)
+	var new_tab_index = tab_container.get_tab_count() - 1
+	tab_container.set_tab_title(new_tab_index, "Canvas " + str(canvas_counter))
+	tab_container.current_tab = new_tab_index
+	_refresh_viewport_update_modes()
+	_sync_active_canvas_with_current_tab()
 
 func _on_edit_menu_pressed(id: int):
 	match id:
@@ -270,6 +467,10 @@ func _on_color_picker_color_changed(color):
 func _on_h_slider_value_changed(value):
 	stroke_width = value
 
+func _on_point_attraction_strength_changed(value: float) -> void:
+	point_attraction_strength = value
+	_apply_point_attraction_settings(active_paint_canvas)
+
 func _on_brush_button_pressed():
 	_set_tool(Tool.BRUSH)
 
@@ -279,9 +480,15 @@ func _on_eraser_button_pressed():
 func _on_fill_button_pressed():
 	_set_tool(Tool.FILL)
 
+func _on_clear_canvas_button_pressed() -> void:
+	if active_paint_canvas and active_paint_canvas.has_method("clear_canvas_contents"):
+		active_paint_canvas.clear_canvas_contents()
+
 func _set_tool(tool: Tool):
 	current_tool = tool
 	_update_tool_buttons()
+	if active_paint_canvas and active_paint_canvas.has_method("queue_crosshair_overlay_redraw"):
+		active_paint_canvas.queue_crosshair_overlay_redraw()
 
 func _setup_tool_buttons():
 	if !brush_button or !eraser_button or !fill_button:
@@ -313,15 +520,13 @@ func _update_tool_buttons():
 	fill_button.button_pressed = current_tool == Tool.FILL
 
 func _on_canvas_updated():
-	if show_navigator:
-		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		navigator_viewport.get_child(0).queue_redraw()
+	var is_busy = active_paint_canvas != null and (bool(active_paint_canvas.get("is_drawing")) or bool(active_paint_canvas.get("is_fill_in_progress")))
+	_request_navigator_update(not is_busy)
 
 func _on_navigator_texture_rect_resized():
 	if navigator_viewport:
 		navigator_viewport.size = $NavigatorTextureRect.size
-		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		navigator_viewport.get_child(0).queue_redraw()
+		_request_navigator_update(true)
 
 
 # 無限キャンバスの保存
@@ -380,7 +585,7 @@ func _load_infinite_canvas():
 				
 				var viewport = SubViewport.new()
 				viewport.handle_input_locally = false
-				viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+				viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 				viewport.size = get_viewport().get_visible_rect().size
 				viewport_container.add_child(viewport)
 				
@@ -391,10 +596,11 @@ func _load_infinite_canvas():
 				# タブに追加
 				canvas_counter += 1
 				tab_container.add_child(viewport_container)
-				tab_container.set_tab_title(
-					tab_container.get_tab_count() - 1,
-					"Canvas " + str(canvas_counter)
-				)
+				var new_tab_index = tab_container.get_tab_count() - 1
+				tab_container.set_tab_title(new_tab_index, "Canvas " + str(canvas_counter))
+				tab_container.current_tab = new_tab_index
+				_refresh_viewport_update_modes()
+				_sync_active_canvas_with_current_tab()
 			file_dialog.queue_free()
 	)
 	
@@ -410,41 +616,17 @@ func _load_infinite_canvas():
 func _on_canvas_input(canvas: Node2D, event: InputEvent):
 	if event is InputEventMouseButton and event.pressed:
 		if canvas != active_paint_canvas:
-			active_paint_canvas = canvas
-			_apply_directional_crosshair_settings(active_paint_canvas)
-			# ナビゲーターの更新をトリガー
-			_update_navigator_view()
+			_set_active_canvas(canvas)
 
 # ナビゲーター更新用のメソッドを追加
 func _update_navigator_view():
-	if show_navigator and active_paint_canvas:
-		navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		navigator_viewport.get_child(0).queue_redraw()
+	_request_navigator_update(true)
 
 func _on_canvas_input_received(canvas: Node2D):
-	print("アクティブ",active_paint_canvas)
 	# 既にアクティブなら何もしない
 	if active_paint_canvas == canvas:
-		print("アクティブおんなじ")
 		return
-		
-	if active_paint_canvas != null and is_instance_valid(active_paint_canvas):
-		active_paint_canvas.queue_redraw()
-		
-	if canvas != active_paint_canvas:
-		active_paint_canvas = canvas
-		_apply_directional_crosshair_settings(active_paint_canvas)
-		# ナビゲーターの更新をトリガー
-		if show_navigator:
-			navigator_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-			navigator_viewport.get_child(0).queue_redraw()
-		print("なのは～",active_paint_canvas)
-	
-		if layer_manager:
-			print("レイヤーまね")
-			layer_manager.set_target_canvas(active_paint_canvas)
-		else:
-			print("Error: layer_window is null!")
+	_set_active_canvas(canvas)
 
 func _apply_directional_crosshair_settings(canvas: Node2D) -> void:
 	if not canvas:
@@ -459,7 +641,23 @@ func _apply_directional_crosshair_settings(canvas: Node2D) -> void:
 	canvas.directional_crosshair_smoothing = directional_crosshair_smoothing
 	canvas.directional_crosshair_trail_interval = directional_crosshair_trail_interval
 	canvas.directional_crosshair_trail_persist = directional_crosshair_trail_persist
-	canvas.queue_redraw()
+	if canvas.has_method("queue_crosshair_overlay_redraw"):
+		canvas.queue_crosshair_overlay_redraw()
+
+func _apply_point_attraction_settings(canvas: Node2D) -> void:
+	if not canvas:
+		return
+	canvas.point_attraction_strength = point_attraction_strength
+	if canvas.has_method("update_point_attraction_feedback"):
+		canvas.update_point_attraction_feedback(canvas.last_input_position)
+	if canvas.has_method("queue_preview_overlay_redraw"):
+		canvas.queue_preview_overlay_redraw()
+	if canvas.has_method("queue_crosshair_overlay_redraw"):
+		canvas.queue_crosshair_overlay_redraw()
+
+func _on_tab_changed(_tab: int) -> void:
+	_refresh_viewport_update_modes()
+	_sync_active_canvas_with_current_tab()
 
 func _on_crosshair_enabled_toggled(pressed: bool) -> void:
 	directional_crosshair_enabled = pressed

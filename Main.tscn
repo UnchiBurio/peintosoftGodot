@@ -1,15 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://dplna0ffyccau"]
+[gd_scene format=3 uid="uid://dplna0ffyccau"]
 
-[ext_resource type="Script" uid="uid://b24bdijxg858m" path="res://Main.gd" id="1_main"]
-[ext_resource type="Script" uid="uid://ctljkh2c0d1p5" path="res://DraggableNavigator.gd" id="2_6pmi3"]
-[ext_resource type="PackedScene" uid="uid://dijdpgcxp8ebt" path="res://canvas/layer_manager_scene.tscn" id="2_r0du0"]
-[ext_resource type="Script" path="res://DraggablePanel.gd" id="3_ticcg"]
-
-[sub_resource type="ButtonGroup" id="ButtonGroup_blarn"]
+[ext_resource type="Script" uid="uid://be3uvkynjwcun" path="res://src/Main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://ctljkh2c0d1p5" path="res://src/DraggableNavigator.gd" id="2_6pmi3"]
+[ext_resource type="PackedScene" uid="uid://dijdpgcxp8ebt" path="res://src/canvas/layer_manager_scene.tscn" id="2_r0du0"]
+[ext_resource type="Script" uid="uid://dubijccgabfif" path="res://src/DraggablePanel.gd" id="3_ticcg"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_blarn"]
 
-[node name="Main" type="Control"]
+[node name="Main" type="Control" unique_id=386992080]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,7 +16,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1944072175]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -26,12 +24,12 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuBar" type="MenuBar" parent="VBoxContainer"]
+[node name="MenuBar" type="MenuBar" parent="VBoxContainer" unique_id=1277187925]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="ColorRect" type="ColorRect" parent="VBoxContainer/MenuBar"]
+[node name="ColorRect" type="ColorRect" parent="VBoxContainer/MenuBar" unique_id=1205390253]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -40,7 +38,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.388155, 0.448806, 0.416826, 1)
 
-[node name="File" type="MenuButton" parent="VBoxContainer/MenuBar"]
+[node name="File" type="MenuButton" parent="VBoxContainer/MenuBar" unique_id=1041551039]
 layout_mode = 0
 offset_right = 64.0
 offset_bottom = 31.0
@@ -53,7 +51,7 @@ popup/item_1/id = 1
 popup/item_2/text = "Load"
 popup/item_2/id = 2
 
-[node name="Edit" type="MenuButton" parent="VBoxContainer/MenuBar"]
+[node name="Edit" type="MenuButton" parent="VBoxContainer/MenuBar" unique_id=185891786]
 layout_mode = 0
 offset_left = 64.0
 offset_right = 128.0
@@ -65,83 +63,111 @@ popup/item_0/id = 0
 popup/item_1/text = "Redo"
 popup/item_1/id = 1
 
-[node name="TabContainer" type="TabContainer" parent="VBoxContainer"]
+[node name="View" type="MenuButton" parent="VBoxContainer/MenuBar"]
+layout_mode = 0
+offset_left = 128.0
+offset_right = 192.0
+offset_bottom = 31.0
+text = "View"
+
+[node name="TabContainer" type="TabContainer" parent="VBoxContainer" unique_id=716270690]
 layout_mode = 2
 size_flags_horizontal = 3
 drag_to_rearrange_enabled = true
 
-[node name="LayerManagerScene" parent="VBoxContainer" instance=ExtResource("2_r0du0")]
+[node name="LayerManagerScene" parent="VBoxContainer" unique_id=768052884 instance=ExtResource("2_r0du0")]
+oversampling_override = 1.0
 position = Vector2i(800, 100)
 
-[node name="ColorPickerButton" type="ColorPickerButton" parent="."]
+[node name="ColorPickerButton" type="ColorPickerButton" parent="." unique_id=1014649811]
 layout_mode = 0
-offset_left = 128.0
-offset_right = 194.0
+offset_left = 192.0
+offset_right = 258.0
 offset_bottom = 31.0
 
-[node name="HSlider" type="HSlider" parent="."]
+[node name="HSlider" type="HSlider" parent="." unique_id=1353527614]
 layout_mode = 0
-offset_left = 202.0
+offset_left = 266.0
 offset_top = 7.0
-offset_right = 435.0
+offset_right = 499.0
 offset_bottom = 23.0
 
-[node name="ToolWindow" type="PanelContainer" parent="."]
+[node name="ToolWindow" type="PanelContainer" parent="." unique_id=406941691]
+custom_minimum_size = Vector2(190, 170)
 layout_mode = 0
 offset_left = 10.0
 offset_top = 50.0
-offset_right = 170.0
-offset_bottom = 150.0
-custom_minimum_size = Vector2(160, 100)
+offset_right = 200.0
+offset_bottom = 220.0
 script = ExtResource("3_ticcg")
 
-[node name="MarginContainer" type="MarginContainer" parent="ToolWindow"]
+[node name="MarginContainer" type="MarginContainer" parent="ToolWindow" unique_id=1840962616]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ToolWindow/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ToolWindow/MarginContainer" unique_id=572895988]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="ToolLabel" type="Label" parent="ToolWindow/MarginContainer/VBoxContainer"]
+[node name="ToolLabel" type="Label" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=1551766436]
 layout_mode = 2
 text = "ツール"
 horizontal_alignment = 1
 
-[node name="BrushButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer"]
+[node name="BrushButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=1432529805]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 button_group = SubResource("ButtonGroup_blarn")
 text = "ペン"
 
-[node name="EraserButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer"]
+[node name="EraserButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=589454523]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 button_group = SubResource("ButtonGroup_blarn")
 text = "消しゴム"
 
-[node name="FillButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer"]
+[node name="FillButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=1308749341]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 button_group = SubResource("ButtonGroup_blarn")
 text = "塗りつぶし"
 
-[node name="TipVisibilityCheckBox" type="CheckBox" parent="ToolWindow/MarginContainer/VBoxContainer"]
+[node name="ClearCanvasButton" type="Button" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=1398422201]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "全消し"
+
+[node name="TipVisibilityCheckBox" type="CheckBox" parent="ToolWindow/MarginContainer/VBoxContainer" unique_id=755922544]
 layout_mode = 2
 text = "ペン先を表示"
 
-[node name="NavigatorViewport" type="SubViewport" parent="."]
+[node name="PointAttractionStrengthRow" type="HBoxContainer" parent="ToolWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="PointAttractionStrengthLabel" type="Label" parent="ToolWindow/MarginContainer/VBoxContainer/PointAttractionStrengthRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "点の引力"
+
+[node name="PointAttractionStrengthSlider" type="HSlider" parent="ToolWindow/MarginContainer/VBoxContainer/PointAttractionStrengthRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 0.5
+step = 0.01
+value = 0.18
+
+[node name="NavigatorViewport" type="SubViewport" parent="." unique_id=410704962]
 size = Vector2i(200, 200)
 render_target_update_mode = 4
 
-[node name="NavigatorTextureRect" type="TextureRect" parent="."]
+[node name="NavigatorTextureRect" type="TextureRect" parent="." unique_id=1814450427]
 layout_mode = 0
 offset_left = 389.0
 offset_top = 116.0
@@ -150,100 +176,98 @@ offset_bottom = 182.0
 theme_type_variation = &"PanelContainer"
 script = ExtResource("2_6pmi3")
 
-[node name="CrosshairWindow" type="PanelContainer" parent="."]
+[node name="CrosshairWindow" type="PanelContainer" parent="." unique_id=457808325]
+custom_minimum_size = Vector2(200, 360)
 layout_mode = 0
 offset_left = 180.0
 offset_top = 50.0
 offset_right = 380.0
 offset_bottom = 360.0
-custom_minimum_size = Vector2(200, 360)
 script = ExtResource("3_ticcg")
 
-[node name="MarginContainer" type="MarginContainer" parent="CrosshairWindow"]
+[node name="MarginContainer" type="MarginContainer" parent="CrosshairWindow" unique_id=28619417]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CrosshairWindow/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="CrosshairWindow/MarginContainer" unique_id=933944438]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="CrosshairLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1684516533]
 layout_mode = 2
 text = "回転クロスヘア"
 horizontal_alignment = 1
 
-[node name="CrosshairEnabledCheckBox" type="CheckBox" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairEnabledCheckBox" type="CheckBox" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=449450354]
 layout_mode = 2
 text = "表示する"
 
-[node name="CrosshairPrimaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairPrimaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=276741838]
 layout_mode = 2
 
-[node name="CrosshairPrimaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow"]
+[node name="CrosshairPrimaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow" unique_id=1565328802]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "線1 色"
 
-[node name="CrosshairPrimaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow"]
+[node name="CrosshairPrimaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow" unique_id=720390678]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CrosshairSecondaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairSecondaryColorRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1944760327]
 layout_mode = 2
 
-[node name="CrosshairSecondaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow"]
+[node name="CrosshairSecondaryColorLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow" unique_id=1785618571]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "線2 色"
 
-[node name="CrosshairSecondaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow"]
+[node name="CrosshairSecondaryColorPicker" type="ColorPickerButton" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow" unique_id=1833968256]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CrosshairAlphaRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairAlphaRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1737234890]
 layout_mode = 2
 
-[node name="CrosshairAlphaLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow"]
+[node name="CrosshairAlphaLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow" unique_id=719091827]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "透明度"
 
-[node name="CrosshairAlphaSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow"]
+[node name="CrosshairAlphaSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairAlphaRow" unique_id=1334350740]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.05
 value = 0.6
 
-[node name="CrosshairLengthRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairLengthRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=2028682089]
 layout_mode = 2
 
-[node name="CrosshairLengthLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow"]
+[node name="CrosshairLengthLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow" unique_id=449890349]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "長さ"
 
-[node name="CrosshairLengthSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow"]
+[node name="CrosshairLengthSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairLengthRow" unique_id=1057027333]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 4.0
 max_value = 64.0
-step = 1.0
 value = 18.0
 
-[node name="CrosshairThicknessRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairThicknessRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=808702399]
 layout_mode = 2
 
-[node name="CrosshairThicknessLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow"]
+[node name="CrosshairThicknessLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow" unique_id=1178566779]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "太さ"
 
-[node name="CrosshairThicknessSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow"]
+[node name="CrosshairThicknessSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairThicknessRow" unique_id=1094950300]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 1.0
@@ -251,68 +275,67 @@ max_value = 8.0
 step = 0.5
 value = 1.0
 
-[node name="CrosshairMinMovementRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairMinMovementRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1423050083]
 layout_mode = 2
 
-[node name="CrosshairMinMovementLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow"]
+[node name="CrosshairMinMovementLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow" unique_id=2115029516]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "移動しきい値"
 
-[node name="CrosshairMinMovementSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow"]
+[node name="CrosshairMinMovementSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairMinMovementRow" unique_id=874129419]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 20.0
 step = 0.5
 value = 2.0
 
-[node name="CrosshairSmoothingRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairSmoothingRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=2133853691]
 layout_mode = 2
 
-[node name="CrosshairSmoothingLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow"]
+[node name="CrosshairSmoothingLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow" unique_id=1469202501]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "スムージング"
 
-[node name="CrosshairSmoothingSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow"]
+[node name="CrosshairSmoothingSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSmoothingRow" unique_id=1148188562]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.05
 value = 0.2
 
-[node name="CrosshairTrailIntervalRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairTrailIntervalRow" type="HBoxContainer" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1831785424]
 layout_mode = 2
 
-[node name="CrosshairTrailIntervalLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow"]
+[node name="CrosshairTrailIntervalLabel" type="Label" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow" unique_id=1827562645]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "間隔"
 
-[node name="CrosshairTrailIntervalSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow"]
+[node name="CrosshairTrailIntervalSlider" type="HSlider" parent="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairTrailIntervalRow" unique_id=1676404761]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 4.0
 max_value = 128.0
-step = 1.0
 value = 20.0
 
-[node name="CrosshairTrailPersistCheckBox" type="CheckBox" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairTrailPersistCheckBox" type="CheckBox" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=22460564]
 layout_mode = 2
 text = "描画後も残す"
 
-[node name="CrosshairTrailClearButton" type="Button" parent="CrosshairWindow/MarginContainer/VBoxContainer"]
+[node name="CrosshairTrailClearButton" type="Button" parent="CrosshairWindow/MarginContainer/VBoxContainer" unique_id=1119989068]
 layout_mode = 2
 text = "残りを削除"
 
+[connection signal="color_changed" from="ColorPickerButton" to="." method="_on_color_picker_color_changed"]
+[connection signal="value_changed" from="HSlider" to="." method="_on_h_slider_value_changed"]
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/BrushButton" to="." method="_on_brush_button_pressed"]
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/EraserButton" to="." method="_on_eraser_button_pressed"]
 [connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/FillButton" to="." method="_on_fill_button_pressed"]
+[connection signal="pressed" from="ToolWindow/MarginContainer/VBoxContainer/ClearCanvasButton" to="." method="_on_clear_canvas_button_pressed"]
 [connection signal="toggled" from="ToolWindow/MarginContainer/VBoxContainer/TipVisibilityCheckBox" to="." method="_on_tip_visibility_toggled"]
-[connection signal="color_changed" from="ColorPickerButton" to="." method="_on_color_picker_color_changed"]
-[connection signal="value_changed" from="HSlider" to="." method="_on_h_slider_value_changed"]
+[connection signal="value_changed" from="ToolWindow/MarginContainer/VBoxContainer/PointAttractionStrengthRow/PointAttractionStrengthSlider" to="." method="_on_point_attraction_strength_changed"]
 [connection signal="toggled" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairEnabledCheckBox" to="." method="_on_crosshair_enabled_toggled"]
 [connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairPrimaryColorRow/CrosshairPrimaryColorPicker" to="." method="_on_crosshair_primary_color_changed"]
 [connection signal="color_changed" from="CrosshairWindow/MarginContainer/VBoxContainer/CrosshairSecondaryColorRow/CrosshairSecondaryColorPicker" to="." method="_on_crosshair_secondary_color_changed"]
