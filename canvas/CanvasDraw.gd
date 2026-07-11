@@ -6,6 +6,7 @@ var paint_canvas: Node2D
 var _pending_updates := {}
 var _last_draw_time := 0.0
 const MIN_UPDATE_INTERVAL = 1.0/60.0  # 60FPS
+const DRAWING_UPDATE_INTERVAL = 1.0/120.0  # 描画中はより高頻度で更新
 var chunk_update_times := {}  # チャンクごとの更新時間を記録
 var debug_update_time := 0.5  # 更新状態を表示する時間（秒）
 const GUIDE_POINT_MIN_DISTANCE := 4.0
@@ -28,8 +29,12 @@ func draw():
 func process_pending_updates(force_update: bool = false)->void:
 	var current_time = Time.get_ticks_msec()
 	var elapsed = (current_time - _last_draw_time) / 1000.0
-	
-	if not force_update and elapsed < MIN_UPDATE_INTERVAL:
+
+	var update_interval = MIN_UPDATE_INTERVAL
+	if paint_canvas.is_drawing:
+		update_interval = DRAWING_UPDATE_INTERVAL
+
+	if not force_update and elapsed < update_interval:
 		return
 	
 	var was_updated = false  # 更新があったかどうかのフラグ
